@@ -10,6 +10,8 @@ let roomid;
 let iamhost = false;
 let allusersinroom = [];
 
+const port = process.env.PORT || 4000;
+
 /* Server URL */
 const socket = io("we-watch-gold.vercel.app");
 
