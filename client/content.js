@@ -1,3 +1,5 @@
+const io = require("socket.io-client");
+
 let videoplayer;
 let adTimer;
 let myid;
