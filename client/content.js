@@ -59,7 +59,7 @@ server.listen(port, () => {
 });
 
 /* Server URL */
-const socket = io("we-watch-gold.vercel.app");
+const socket = io("https://wewatch-5wj7.onrender.com");
 
 socket.on("whoami", ({ id }) => {
   // console.log('myid', id);
