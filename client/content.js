@@ -14,7 +14,7 @@ const express = require("express");
 const app = express();
 const http = require("http");
 const server = http.createServer(app);
-const io = require("socket.io")(server, { cors: { origin: "*" } });
+const ios = require("socket.io")(server, { cors: { origin: "*" } });
 
 const port = process.env.PORT || 4000;
 
@@ -22,7 +22,7 @@ app.get("/", (req, res) => {
   res.send("<h1>WeWatcheD Server</h1>");
 });
 
-io.on("connection", (socket) => {
+ios.on("connection", (socket) => {
   // Connected Check
   console.log("user connected");
   socket.emit("whoami", { id: socket.id });
@@ -30,22 +30,22 @@ io.on("connection", (socket) => {
   socket.on("joinmetothisroom", ({ roomid, name }) => {
     socket.join(roomid);
     socket.emit("joinmetothisroomsuccess", `${roomid} `);
-    io.to(roomid).emit("someonejoined", name);
+    ios.to(roomid).emit("someonejoined", name);
   });
 
   // Tell everyone who are here in the room
   socket.on("tell_everyone_who_joined", ({ allusers, roomid }) => {
-    io.to(roomid).emit("who_joined", allusers);
+    ios.to(roomid).emit("who_joined", allusers);
   });
 
   // Check connection
   socket.on("msg", ({ data, roomid }) => {
-    io.to(roomid).emit("msg", data);
+    ios.to(roomid).emit("msg", data);
   });
 
   // Get video state
   socket.on("videoStates", ({ videoState, roomid }) => {
-    io.to(roomid).emit("videoStates", videoState);
+    ios.to(roomid).emit("videoStates", videoState);
   });
 
   // Disconnect Check
