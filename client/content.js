@@ -1,4 +1,4 @@
-const io = require("socket.io-client");
+// const io = require("socket.io-client");
 
 let videoplayer;
 let adTimer;
@@ -7,56 +7,56 @@ let roomid;
 let iamhost = false;
 let allusersinroom = [];
 
-const express = require("express");
-const app = express();
-const http = require("http");
-const server = http.createServer(app);
-const ios = require("socket.io")(server, { cors: { origin: "*" } });
+// const express = require("express");
+// const app = express();
+// const http = require("http");
+// const server = http.createServer(app);
+// const ios = require("socket.io")(server, { cors: { origin: "*" } });
 
-const port = process.env.PORT || 4000;
+// const port = process.env.PORT || 4000;
 
-app.get("/", (req, res) => {
-  res.send("<h1>WeWatcheD Server</h1>");
-});
+// app.get("/", (req, res) => {
+//   res.send("<h1>WeWatcheD Server</h1>");
+// });
 
-ios.on("connection", (socket) => {
-  // Connected Check
-  console.log("user connected");
-  socket.emit("whoami", { id: socket.id });
-  // Join to the room
-  socket.on("joinmetothisroom", ({ roomid, name }) => {
-    socket.join(roomid);
-    socket.emit("joinmetothisroomsuccess", `${roomid} `);
-    ios.to(roomid).emit("someonejoined", name);
-  });
+// ios.on("connection", (socket) => {
+//   // Connected Check
+//   console.log("user connected");
+//   socket.emit("whoami", { id: socket.id });
+//   // Join to the room
+//   socket.on("joinmetothisroom", ({ roomid, name }) => {
+//     socket.join(roomid);
+//     socket.emit("joinmetothisroomsuccess", `${roomid} `);
+//     ios.to(roomid).emit("someonejoined", name);
+//   });
 
-  // Tell everyone who are here in the room
-  socket.on("tell_everyone_who_joined", ({ allusers, roomid }) => {
-    ios.to(roomid).emit("who_joined", allusers);
-  });
+//   // Tell everyone who are here in the room
+//   socket.on("tell_everyone_who_joined", ({ allusers, roomid }) => {
+//     ios.to(roomid).emit("who_joined", allusers);
+//   });
 
-  // Check connection
-  socket.on("msg", ({ data, roomid }) => {
-    ios.to(roomid).emit("msg", data);
-  });
+//   // Check connection
+//   socket.on("msg", ({ data, roomid }) => {
+//     ios.to(roomid).emit("msg", data);
+//   });
 
-  // Get video state
-  socket.on("videoStates", ({ videoState, roomid }) => {
-    ios.to(roomid).emit("videoStates", videoState);
-  });
+//   // Get video state
+//   socket.on("videoStates", ({ videoState, roomid }) => {
+//     ios.to(roomid).emit("videoStates", videoState);
+//   });
 
-  // Disconnect Check
-  socket.on("disconnect", () => {
-    console.log("user disconnected");
-  });
-});
+//   // Disconnect Check
+//   socket.on("disconnect", () => {
+//     console.log("user disconnected");
+//   });
+// });
 
-server.listen(port, () => {
-  console.log(`listening on ${port}`);
-});
+// server.listen(port, () => {
+//   console.log(`listening on ${port}`);
+// });
 
 /* Server URL */
-const socket = io("https://wewatch-5wj7.onrender.com");
+const socket = io("https://wewatched.onrender.com");
 
 socket.on("whoami", ({ id }) => {
   // console.log('myid', id);
