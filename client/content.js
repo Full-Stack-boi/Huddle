@@ -1,7 +1,4 @@
 const io = require("socket.io-client");
-const { JSDOM } = require("jsdom");
-const dom = new JSDOM(`<!DOCTYPE html><html><body></body></html>`);
-const document = dom.window.document;
 
 let videoplayer;
 let adTimer;
