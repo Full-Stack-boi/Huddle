@@ -1,0 +1,99 @@
+.main-container {
+	position: fixed;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	z-index: 9999;
+	right: 0;
+	top: 60px;
+	background-image: radial-gradient(circle, rgba(186,184,215,1) 0%, rgba(178,178,252,1) 35%, rgba(164,240,255,1) 100%);
+	width: 300px;
+	height: 100vh;
+	color: #000;
+	padding-top: 20px 10px;
+	transition: 1s all ease;
+	overflow: hidden;
+}
+.start-container {
+	margin-top: -100px;
+	width: 85%;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+}
+
+#WeWatcheD-title {
+	font-size: 2rem;
+	font-weight: 800;
+	margin-bottom: 50px;
+}
+
+#host-btn,
+#join-btn {
+	width: 100%;
+	cursor: pointer;
+	background-color: #1f80e0;
+	color: white;
+	padding: 10px;
+	font-size: 15px;
+	margin: 10px 20px;
+	border-radius: 2px;
+	text-align: center;
+	transition: all 0.5s ease-out;
+}
+
+#join-btn {
+	padding: 10px 10px;
+	margin-top: 0px;
+}
+
+#host-btn:hover,#host-btn:focus,
+#join-btn:hover,#join-btn:focus 
+{
+	background-color: #fff;
+	color: #333;	
+}
+
+#room-label {
+	font-size: 20px;
+	font-weight: 500;
+	margin: 0 20px;
+	margin-bottom: 10px;
+}
+
+#room-id-input,
+#name-id {
+	width: 100%;
+	padding: 10px;
+	font-size: 15px;
+	border-radius: 2px;
+	border: 0;
+	color: #030b17;
+}
+
+#name-id {
+	position: absolute;
+	bottom: 80px;
+	width: 85%;
+}
+
+#status-container {
+	position: relative;
+	width: 92%;
+	font-size: 15px;
+}
+
+.roomcode {
+	font-size: 20px;
+	color: rgb(255, 111, 111);
+}
+
+#close-btn {
+	position: absolute;
+	cursor: pointer;
+	right: 15px;
+	top: 30px;
+	font-size: 10px;
+}

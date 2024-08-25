@@ -1,0 +1,17 @@
+{
+	"manifest_version": 2,
+	"name": "WeWatched",
+	"description": "A chrome extension for watching with your friends and family.",
+	"version": "1.0.0",
+	"content_scripts": [
+		{
+			"matches": ["https://www.youtube.com/watch?*",
+						"https://www.netflix.com/*",
+						"https://www.hotstar.com/*",
+						"https://www.primevideo.com/*"],
+			"js": ["socketioclient.js", "content.js"],
+			"css": ["style.css"]
+		}
+	],
+	"web_accessible_resources": ["style.css"]
+}
