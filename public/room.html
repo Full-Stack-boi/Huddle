@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Huddle – Watch Together</title>
+  <meta name="description" content="Join a Huddle watch party and enjoy videos in perfect sync with friends." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Socket.io client -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
+
+  <style>
+    /* ── Reset & Base ──────────────────────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:        #FFF8F0;
+      --primary:   #8B5CF6;
+      --secondary: #06B6D4;
+      --accent:    #F43F5E;
+      --text-dark: #1E293B;
+      --text-mid:  #475569;
+      --card-bg:   #FFFFFF;
+      --border:    3px solid #1E293B;
+      --shadow:    4px 4px 0px #1E293B;
+      --radius:    16px;
+      --font:      'Quicksand', 'Segoe UI', sans-serif;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text-dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px 60px;
+      overflow-x: hidden;
+    }
+
+    /* ── Decorative Background Blobs ───────────────────────────────── */
+    body::before, body::after {
+      content: '';
+      position: fixed;
+      border-radius: 50%;
+      z-index: -1;
+      opacity: 0.15;
+      pointer-events: none;
+    }
+    body::before {
+      width: 500px; height: 500px;
+      background: var(--primary);
+      top: -120px; right: -100px;
+    }
+    body::after {
+      width: 400px; height: 400px;
+      background: var(--secondary);
+      bottom: -80px; left: -80px;
+    }
+
+    /* ── Header / Logo ─────────────────────────────────────────────── */
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+      animation: fadeSlideDown 0.5s ease-out;
+    }
+    .header__logo {
+      font-size: 2.25rem;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+    .header__sub {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-mid);
+      margin-top: 4px;
+    }
+
+    /* ── Main Card ─────────────────────────────────────────────────── */
+    .card {
+      background: var(--card-bg);
+      border: var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      width: 100%;
+      max-width: 520px;
+      overflow: hidden;
+      animation: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* ── Thumbnail ─────────────────────────────────────────────────── */
+    .thumb {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      border-bottom: var(--border);
+    }
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .thumb__placeholder {
+      font-size: 3rem;
+      opacity: 0.4;
+    }
+    .thumb__badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 8px;
+      border: 2px solid var(--text-dark);
+      box-shadow: 2px 2px 0 var(--text-dark);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Info Section ──────────────────────────────────────────────── */
+    .info {
+      padding: 24px 28px;
+    }
+    .info__title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .info__row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+      color: var(--text-mid);
+    }
+    .info__row span.emoji { flex-shrink: 0; font-size: 1.1rem; }
+    .info__row strong { color: var(--text-dark); font-weight: 600; }
+
+    .info__row--status strong {
+      color: var(--primary);
+    }
+
+    /* ── Buttons ───────────────────────────────────────────────────── */
+    .actions {
+      padding: 0 28px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 16px 20px;
+      font-family: var(--font);
+      font-size: 1.05rem;
+      font-weight: 700;
+      border: var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: var(--shadow);
+      text-decoration: none;
+    }
+    .btn:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0 var(--text-dark);
+    }
+    .btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0 var(--text-dark);
+    }
+
+    .btn--primary {
+      background: var(--primary);
+      color: #fff;
+    }
+    .btn--secondary {
+      background: var(--bg);
+      color: var(--text-dark);
+    }
+    .btn--install {
+      background: var(--secondary);
+      color: #fff;
+    }
+
+    /* ── Extension Notice ──────────────────────────────────────────── */
+    .ext-notice {
+      max-width: 520px;
+      width: 100%;
+      margin-top: 20px;
+      text-align: center;
+      animation: fadeSlideUp 0.5s ease-out 0.3s both;
+    }
+    .ext-notice__warn {
+      font-size: 0.9rem;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .ext-notice .btn {
+      max-width: 320px;
+      margin: 0 auto;
+    }
+
+    /* ── Loading State ─────────────────────────────────────────────── */
+    .loading {
+      text-align: center;
+      padding: 80px 20px;
+      animation: fadeSlideDown 0.5s ease-out;
+    }
+    .loading__spinner {
+      display: inline-block;
+      width: 48px;
+      height: 48px;
+      border: 4px solid var(--primary);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-bottom: 20px;
+    }
+    .loading__text {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-mid);
+    }
+
+    /* ── Error State ───────────────────────────────────────────────── */
+    .error-state {
+      text-align: center;
+      padding: 60px 20px;
+      animation: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .error-state__emoji { font-size: 3rem; margin-bottom: 16px; }
+    .error-state__title { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+    .error-state__msg { color: var(--text-mid); line-height: 1.5; }
+
+    /* ── Close Message ─────────────────────────────────────────────── */
+    .close-msg {
+      margin-top: 24px;
+      font-weight: 600;
+      color: var(--text-mid);
+      font-size: 1rem;
+      animation: fadeSlideUp 0.4s ease-out;
+    }
+
+    /* ── Footer ────────────────────────────────────────────────────── */
+    .footer {
+      margin-top: 48px;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      text-align: center;
+    }
+
+    /* ── Keyframes ─────────────────────────────────────────────────── */
+    @keyframes bounceIn {
+      0%   { transform: scale(0.85) translateY(20px); opacity: 0; }
+      60%  { transform: scale(1.03) translateY(-4px); opacity: 1; }
+      100% { transform: scale(1) translateY(0); }
+    }
+    @keyframes fadeSlideDown {
+      from { opacity: 0; transform: translateY(-12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0.5; }
+    }
+
+    /* ── Responsive ────────────────────────────────────────────────── */
+    @media (max-width: 480px) {
+      body { padding: 24px 12px 40px; }
+      .header__logo { font-size: 1.75rem; }
+      .info { padding: 20px 20px; }
+      .actions { padding: 0 20px 20px; }
+      .btn { padding: 14px 16px; font-size: 0.95rem; }
+    }
+
+    /* ── Utility ───────────────────────────────────────────────────── */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Header
+       ═══════════════════════════════════════════════════════════════ -->
+  <header class="header">
+    <div class="header__logo">🎬 Huddle</div>
+    <div class="header__sub">Watch Together</div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Loading State
+       ═══════════════════════════════════════════════════════════════ -->
+  <div id="loadingState" class="loading">
+    <div class="loading__spinner"></div>
+    <div class="loading__text">Finding your watch party…</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Error State
+       ═══════════════════════════════════════════════════════════════ -->
+  <div id="errorState" class="error-state hidden">
+    <div class="error-state__emoji">😿</div>
+    <div class="error-state__title">Room Not Found</div>
+    <div class="error-state__msg" id="errorMsg">This watch party may have ended or the link might be wrong.</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Main Content
+       ═══════════════════════════════════════════════════════════════ -->
+  <main id="mainContent" class="hidden">
+    <div class="card">
+      <!-- Thumbnail -->
+      <div class="thumb" id="thumbContainer">
+        <span class="thumb__placeholder">📺</span>
+        <span class="thumb__badge" id="statusBadge">Playing</span>
+      </div>
+
+      <!-- Info -->
+      <div class="info">
+        <div class="info__title" id="videoTitle">Loading video title…</div>
+
+        <div class="info__row">
+          <span class="emoji">👤</span>
+          <span>Host: <strong id="hostName">—</strong></span>
+        </div>
+        <div class="info__row">
+          <span class="emoji">🌐</span>
+          <span>Source: <strong id="videoSource">—</strong></span>
+        </div>
+        <div class="info__row">
+          <span class="emoji">⏱️</span>
+          <span>Currently at: <strong id="currentTime">0:00</strong> / <strong id="totalTime">0:00</strong></span>
+        </div>
+        <div class="info__row info__row--status">
+          <span class="emoji">▶️</span>
+          <span>Status: <strong id="playStatus">—</strong></span>
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="actions">
+        <button class="btn btn--primary" id="btnJoin">
+          <span>✅</span> Hop In &amp; Watch Along
+        </button>
+        <button class="btn btn--secondary" id="btnDecline">
+          <span>❌</span> Nah, I'm Good
+        </button>
+      </div>
+    </div>
+
+    <!-- Extension not detected notice -->
+    <div id="extNotice" class="ext-notice hidden">
+      <div class="ext-notice__warn">⚠️ Huddle extension not detected</div>
+      <a class="btn btn--install" id="btnInstall" href="#" target="_blank" rel="noopener">
+        <span>📦</span> Install Huddle Extension
+      </a>
+    </div>
+  </main>
+
+  <!-- Close message (shown after declining) -->
+  <div id="closeMsg" class="close-msg hidden">
+    ✌️ No worries — enjoy your day!
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    Huddle &mdash; Sync your screens, share the moment.
+  </footer>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Scripts
+       ═══════════════════════════════════════════════════════════════ -->
+  <script>
+    (function () {
+      'use strict';
+
+      // ── Config ──────────────────────────────────────────────────────
+      // The Sync Server URL is injected via a meta tag or falls back to
+      // the same origin (for Vercel rewrites) or can be hard-coded here.
+      var SYNC_SERVER_URL = getMeta('sync-server-url') || '';
+      var CHROME_STORE_URL = 'https://chromewebstore.google.com/detail/huddle';
+
+      // ── DOM refs ────────────────────────────────────────────────────
+      var $loading     = document.getElementById('loadingState');
+      var $error       = document.getElementById('errorState');
+      var $errorMsg    = document.getElementById('errorMsg');
+      var $main        = document.getElementById('mainContent');
+      var $thumb       = document.getElementById('thumbContainer');
+      var $statusBadge = document.getElementById('statusBadge');
+      var $videoTitle  = document.getElementById('videoTitle');
+      var $hostName    = document.getElementById('hostName');
+      var $videoSource = document.getElementById('videoSource');
+      var $currentTime = document.getElementById('currentTime');
+      var $totalTime   = document.getElementById('totalTime');
+      var $playStatus  = document.getElementById('playStatus');
+      var $btnJoin     = document.getElementById('btnJoin');
+      var $btnDecline  = document.getElementById('btnDecline');
+      var $extNotice   = document.getElementById('extNotice');
+      var $btnInstall  = document.getElementById('btnInstall');
+      var $closeMsg    = document.getElementById('closeMsg');
+
+      // ── Extract room code from URL ──────────────────────────────────
+      // Supports /room/{code} path
+      var pathParts = window.location.pathname.split('/').filter(Boolean);
+      var roomIdx = pathParts.indexOf('room');
+      var roomCode = roomIdx !== -1 ? pathParts[roomIdx + 1] : null;
+
+      if (!roomCode) {
+        showError('No room code found in the URL.');
+        return;
+      }
+
+      // ── Room state ──────────────────────────────────────────────────
+      var roomData = null;
+
+      // ── Init ────────────────────────────────────────────────────────
+      fetchRoomData();
+      detectExtension();
+
+      // ── Fetch Room Metadata ─────────────────────────────────────────
+      function fetchRoomData() {
+        fetch('/api/room/' + encodeURIComponent(roomCode))
+          .then(function (res) {
+            if (!res.ok) throw new Error('Room not found (HTTP ' + res.status + ')');
+            return res.json();
+          })
+          .then(function (data) {
+            roomData = data;
+            renderRoom(data);
+            connectSocket();
+          })
+          .catch(function (err) {
+            showError(err.message || 'Could not load room data.');
+          });
+      }
+
+      // ── Render Room Data ────────────────────────────────────────────
+      function renderRoom(data) {
+        $loading.classList.add('hidden');
+        $main.classList.remove('hidden');
+
+        // Thumbnail
+        if (data.videoThumbnail) {
+          var img = document.createElement('img');
+          img.src = data.videoThumbnail;
+          img.alt = data.videoTitle || 'Video thumbnail';
+          img.onerror = function () { this.style.display = 'none'; };
+          // Remove placeholder and insert image
+          $thumb.querySelector('.thumb__placeholder').style.display = 'none';
+          $thumb.insertBefore(img, $thumb.firstChild);
+        }
+
+        // Text info
+        $videoTitle.textContent = data.videoTitle || 'Untitled Video';
+        $hostName.textContent = data.hostName || 'Anonymous';
+        $videoSource.textContent = data.source || detectSource(data.videoUrl);
+        $totalTime.textContent = formatTime(data.videoDuration || 0);
+        updatePlayback(data.hostTime || 0, !data.isHostPaused);
+      }
+
+      // ── Real-time Updates via Socket.io ─────────────────────────────
+      function connectSocket() {
+        if (typeof io === 'undefined') return;
+
+        var serverUrl = SYNC_SERVER_URL || 'http://localhost:4000'; // LOCAL TEST
+        var socket = io(serverUrl, { transports: ['websocket', 'polling'] });
+
+        socket.on('connect', function () {
+          socket.emit('joinRoom', { roomCode: roomCode, name: '__landing__' });
+        });
+
+        // Listen for video state updates from the host
+        socket.on('videoSync', function (state) {
+          if (state && typeof state === 'object') {
+            updatePlayback(state.hostTime || 0, !state.isHostPaused);
+          }
+        });
+      }
+
+      // ── Update Playback Display ─────────────────────────────────────
+      function updatePlayback(seconds, isPlaying) {
+        $currentTime.textContent = formatTime(seconds);
+
+        if (isPlaying) {
+          $playStatus.textContent = 'Playing';
+          $statusBadge.textContent = '▶ Playing';
+          $statusBadge.style.background = 'var(--primary)';
+        } else {
+          $playStatus.textContent = 'Paused';
+          $statusBadge.textContent = '⏸ Paused';
+          $statusBadge.style.background = 'var(--accent)';
+        }
+      }
+
+      // ── Extension Detection ─────────────────────────────────────────
+      function detectExtension() {
+        var detected = false;
+
+        // Method 1: Check for injected marker element
+        if (document.getElementById('huddle-ext-installed')) {
+          detected = true;
+        }
+
+        // Method 2: Listen for postMessage from extension
+        var timeout = setTimeout(function () {
+          if (!detected) {
+            onExtensionNotDetected();
+          }
+        }, 1500);
+
+        window.addEventListener('message', function handler(event) {
+          if (event.data && event.data.type === 'HUDDLE_EXT_DETECTED') {
+            detected = true;
+            clearTimeout(timeout);
+            window.removeEventListener('message', handler);
+          }
+        });
+
+        // Broadcast a detection request
+        window.postMessage({ type: 'HUDDLE_EXT_DETECT_REQUEST' }, '*');
+
+        if (detected) {
+          clearTimeout(timeout);
+        }
+      }
+
+      function onExtensionNotDetected() {
+        $extNotice.classList.remove('hidden');
+        $btnInstall.href = CHROME_STORE_URL;
+
+        // Swap primary button to install
+        $btnJoin.innerHTML = '<span>📦</span> Install Huddle to Join';
+        $btnJoin.classList.remove('btn--primary');
+        $btnJoin.classList.add('btn--install');
+        $btnJoin.onclick = function (e) {
+          e.preventDefault();
+          window.open(CHROME_STORE_URL, '_blank');
+        };
+      }
+
+      // ── Button Handlers ─────────────────────────────────────────────
+      $btnJoin.addEventListener('click', function () {
+        if (!roomData || !roomData.videoUrl) return;
+        var url = roomData.videoUrl;
+        // Append huddle room code to the URL hash
+        var separator = url.indexOf('#') !== -1 ? '&' : '#';
+        window.location.href = url + separator + 'huddle_room=' + encodeURIComponent(roomCode);
+      });
+
+      $btnDecline.addEventListener('click', function () {
+        $main.classList.add('hidden');
+        $extNotice.classList.add('hidden');
+        $closeMsg.classList.remove('hidden');
+
+        // Try to close the tab; browsers often block this for non-script-opened tabs
+        setTimeout(function () { window.close(); }, 300);
+      });
+
+      // ── Helpers ─────────────────────────────────────────────────────
+      function formatTime(totalSeconds) {
+        totalSeconds = Math.floor(totalSeconds);
+        var h = Math.floor(totalSeconds / 3600);
+        var m = Math.floor((totalSeconds % 3600) / 60);
+        var s = totalSeconds % 60;
+        if (h > 0) {
+          return h + ':' + pad(m) + ':' + pad(s);
+        }
+        return m + ':' + pad(s);
+      }
+
+      function pad(n) {
+        return n < 10 ? '0' + n : '' + n;
+      }
+
+      function detectSource(url) {
+        if (!url) return 'Unknown';
+        if (url.indexOf('youtube.com') !== -1 || url.indexOf('youtu.be') !== -1) return 'YouTube';
+        if (url.indexOf('netflix.com') !== -1) return 'Netflix';
+        if (url.indexOf('primevideo.com') !== -1) return 'Prime Video';
+        if (url.indexOf('hotstar.com') !== -1) return 'Hotstar';
+        if (url.indexOf('twitch.tv') !== -1) return 'Twitch';
+        try { return new URL(url).hostname; } catch (e) { return 'Unknown'; }
+      }
+
+      function getMeta(name) {
+        var el = document.querySelector('meta[name="' + name + '"]');
+        return el ? el.getAttribute('content') : '';
+      }
+
+      function showError(msg) {
+        $loading.classList.add('hidden');
+        $error.classList.remove('hidden');
+        if (msg) $errorMsg.textContent = msg;
+      }
+    })();
+  </script>
+</body>
+</html>

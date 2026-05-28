@@ -1,99 +1,851 @@
-.main-container {
-	position: fixed;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: center;
-	z-index: 9999;
-	right: 0;
-	top: 60px;
-	background-image: radial-gradient(circle, rgba(186,184,215,1) 0%, rgba(178,178,252,1) 35%, rgba(164,240,255,1) 100%);
-	width: 300px;
-	height: 100vh;
-	color: #000;
-	padding-top: 20px 10px;
-	transition: 1s all ease;
-	overflow: hidden;
-}
-.start-container {
-	margin-top: -100px;
-	width: 85%;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: center;
+/* ============================================
+   HUDDLE — Cartoon / Playful Design System
+   ============================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap");
+
+/* ---------- Design Tokens ---------- */
+:root {
+  --hud-primary: #8b5cf6;
+  --hud-primary-light: #a78bfa;
+  --hud-secondary: #06b6d4;
+  --hud-accent: #f43f5e;
+  --hud-accent-light: #fb7185;
+  --hud-success: #22c55e;
+  --hud-warning: #f59e0b;
+  --hud-bg-cream: #fff8f0;
+  --hud-bg-card: #ffffff;
+  --hud-text-dark: #1e293b;
+  --hud-text-muted: #64748b;
+  --hud-text-light: #f8fafc;
+  --hud-border: #1e293b;
+  --hud-border-width: 3px;
+  --hud-shadow: 4px 4px 0px #1e293b;
+  --hud-shadow-sm: 2px 2px 0px #1e293b;
+  --hud-shadow-hover: 6px 6px 0px #1e293b;
+  --hud-radius: 16px;
+  --hud-radius-sm: 10px;
+  --hud-radius-pill: 50px;
+  --hud-font: "Quicksand", "Segoe UI", sans-serif;
+  --hud-twitch: #9146ff;
+  --hud-twitch-dark: #7c3aed;
+  --hud-transition: 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-#WeWatcheD-title {
-	font-size: 2rem;
-	font-weight: 800;
-	margin-bottom: 50px;
+/* ---------- Base Container ---------- */
+.huddle-sidebar {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  z-index: 99999;
+  right: 0;
+  top: 0;
+  width: 340px;
+  height: 100vh;
+  background: var(--hud-bg-cream);
+  font-family: var(--hud-font);
+  color: var(--hud-text-dark);
+  border-left: var(--hud-border-width) solid var(--hud-border);
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.08);
+  transform: translateX(0);
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-#host-btn,
-#join-btn {
-	width: 100%;
-	cursor: pointer;
-	background-color: #1f80e0;
-	color: white;
-	padding: 10px;
-	font-size: 15px;
-	margin: 10px 20px;
-	border-radius: 2px;
-	text-align: center;
-	transition: all 0.5s ease-out;
+.huddle-sidebar.hidden {
+  transform: translateX(100%);
 }
 
-#join-btn {
-	padding: 10px 10px;
-	margin-top: 0px;
+/* ---------- Header ---------- */
+.huddle-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--hud-primary);
+  border-bottom: var(--hud-border-width) solid var(--hud-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
-#host-btn:hover,#host-btn:focus,
-#join-btn:hover,#join-btn:focus 
-{
-	background-color: #fff;
-	color: #333;	
+.huddle-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-#room-label {
-	font-size: 20px;
-	font-weight: 500;
-	margin: 0 20px;
-	margin-bottom: 10px;
+.huddle-logo-icon {
+  font-size: 24px;
+  animation: huddle-bounce 2s ease-in-out infinite;
 }
 
-#room-id-input,
-#name-id {
-	width: 100%;
-	padding: 10px;
-	font-size: 15px;
-	border-radius: 2px;
-	border: 0;
-	color: #030b17;
+.huddle-logo-text {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--hud-text-light);
+  letter-spacing: -0.5px;
 }
 
-#name-id {
-	position: absolute;
-	bottom: 80px;
-	width: 85%;
+.huddle-close-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  color: var(--hud-text-light);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all var(--hud-transition);
 }
 
-#status-container {
-	position: relative;
-	width: 92%;
-	font-size: 15px;
+.huddle-close-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+  transform: scale(1.1) rotate(90deg);
 }
 
-.roomcode {
-	font-size: 20px;
-	color: rgb(255, 111, 111);
+/* ---------- Page Navigation ---------- */
+.huddle-page {
+  display: none;
+  flex-direction: column;
+  padding: 20px;
+  gap: 16px;
+  flex: 1;
+  animation: huddle-fadeIn 0.3s ease;
 }
 
-#close-btn {
-	position: absolute;
-	cursor: pointer;
-	right: 15px;
-	top: 30px;
-	font-size: 10px;
+.huddle-page.active {
+  display: flex;
+}
+
+.huddle-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--hud-font);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--hud-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color var(--hud-transition);
+}
+
+.huddle-back-btn:hover {
+  color: var(--hud-primary);
+}
+
+/* ---------- Cards ---------- */
+.huddle-card {
+  background: var(--hud-bg-card);
+  border: var(--hud-border-width) solid var(--hud-border);
+  border-radius: var(--hud-radius);
+  box-shadow: var(--hud-shadow);
+  padding: 16px;
+  transition: all var(--hud-transition);
+}
+
+.huddle-card:hover {
+  box-shadow: var(--hud-shadow-hover);
+  transform: translate(-1px, -1px);
+}
+
+.huddle-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--hud-text-muted);
+  margin-bottom: 12px;
+}
+
+/* ---------- Inputs ---------- */
+.huddle-input {
+  width: 100%;
+  padding: 12px 14px;
+  font-family: var(--hud-font);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--hud-text-dark);
+  background: var(--hud-bg-cream);
+  border: var(--hud-border-width) solid var(--hud-border);
+  border-radius: var(--hud-radius-sm);
+  box-shadow: var(--hud-shadow-sm);
+  outline: none;
+  transition: all var(--hud-transition);
+  box-sizing: border-box;
+}
+
+.huddle-input:focus {
+  border-color: var(--hud-primary);
+  box-shadow: 3px 3px 0px var(--hud-primary);
+}
+
+.huddle-input::placeholder {
+  color: var(--hud-text-muted);
+  font-weight: 400;
+}
+
+.huddle-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  font-family: var(--hud-font);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--hud-text-dark);
+  background: var(--hud-bg-cream);
+  border: var(--hud-border-width) solid var(--hud-border);
+  border-radius: var(--hud-radius-sm);
+  box-shadow: var(--hud-shadow-sm);
+  outline: none;
+  resize: vertical;
+  min-height: 60px;
+  transition: all var(--hud-transition);
+  box-sizing: border-box;
+}
+
+.huddle-textarea:focus {
+  border-color: var(--hud-primary);
+  box-shadow: 3px 3px 0px var(--hud-primary);
+}
+
+/* ---------- Buttons ---------- */
+.huddle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 18px;
+  font-family: var(--hud-font);
+  font-size: 15px;
+  font-weight: 700;
+  border: var(--hud-border-width) solid var(--hud-border);
+  border-radius: var(--hud-radius-sm);
+  box-shadow: var(--hud-shadow);
+  cursor: pointer;
+  transition: all var(--hud-transition);
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.huddle-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--hud-shadow-hover);
+}
+
+.huddle-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0px 0px 0px var(--hud-border);
+}
+
+.huddle-btn-primary {
+  background: var(--hud-primary);
+  color: var(--hud-text-light);
+}
+
+.huddle-btn-primary:hover {
+  background: var(--hud-primary-light);
+}
+
+.huddle-btn-secondary {
+  background: var(--hud-bg-card);
+  color: var(--hud-text-dark);
+}
+
+.huddle-btn-secondary:hover {
+  background: var(--hud-bg-cream);
+}
+
+.huddle-btn-twitch {
+  background: var(--hud-twitch);
+  color: var(--hud-text-light);
+}
+
+.huddle-btn-twitch:hover {
+  background: var(--hud-twitch-dark);
+}
+
+.huddle-btn-accent {
+  background: var(--hud-accent);
+  color: var(--hud-text-light);
+}
+
+.huddle-btn-accent:hover {
+  background: var(--hud-accent-light);
+}
+
+.huddle-btn-success {
+  background: var(--hud-success);
+  color: var(--hud-text-light);
+}
+
+.huddle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: var(--hud-shadow-sm) !important;
+}
+
+.huddle-btn-small {
+  padding: 8px 14px;
+  font-size: 13px;
+  box-shadow: var(--hud-shadow-sm);
+}
+
+/* ---------- Divider ---------- */
+.huddle-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--hud-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.huddle-divider::before,
+.huddle-divider::after {
+  content: "";
+  flex: 1;
+  height: 2px;
+  background: var(--hud-border);
+  border-radius: 1px;
+}
+
+/* ---------- Room Code Display ---------- */
+.huddle-room-code {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--hud-primary), var(--hud-secondary));
+  color: var(--hud-text-light);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  padding: 14px 20px;
+  border-radius: var(--hud-radius-sm);
+  border: var(--hud-border-width) solid var(--hud-border);
+  box-shadow: var(--hud-shadow);
+  font-family: "Courier New", monospace;
+  cursor: pointer;
+  transition: all var(--hud-transition);
+  text-align: center;
+}
+
+.huddle-room-code:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--hud-shadow-hover);
+}
+
+.huddle-room-code-hint {
+  font-size: 11px;
+  color: var(--hud-text-muted);
+  text-align: center;
+  font-weight: 500;
+}
+
+/* ---------- Viewers List ---------- */
+.huddle-viewers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.huddle-viewer-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--hud-bg-cream);
+  border-radius: var(--hud-radius-sm);
+  border: 2px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all var(--hud-transition);
+}
+
+.huddle-viewer-item.host {
+  border-color: var(--hud-primary);
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.huddle-viewer-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--hud-success);
+  flex-shrink: 0;
+}
+
+/* ---------- Twitch Section ---------- */
+.huddle-twitch-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--hud-radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.huddle-twitch-status.connected {
+  background: rgba(145, 70, 255, 0.08);
+  border: 2px solid var(--hud-twitch);
+  color: var(--hud-twitch);
+}
+
+.huddle-twitch-status.live {
+  background: rgba(244, 63, 94, 0.08);
+  border: 2px solid var(--hud-accent);
+  color: var(--hud-accent);
+}
+
+.huddle-twitch-status.offline {
+  background: rgba(100, 116, 139, 0.08);
+  border: 2px solid var(--hud-text-muted);
+  color: var(--hud-text-muted);
+}
+
+.huddle-live-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--hud-accent);
+  animation: huddle-pulse 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.huddle-viewer-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--hud-text-muted);
+}
+
+/* ---------- Toast Notifications ---------- */
+.huddle-toast {
+  position: fixed;
+  top: 20px;
+  right: 360px;
+  z-index: 100000;
+  padding: 12px 20px;
+  font-family: var(--hud-font);
+  font-size: 13px;
+  font-weight: 600;
+  border: var(--hud-border-width) solid var(--hud-border);
+  border-radius: var(--hud-radius-sm);
+  box-shadow: var(--hud-shadow);
+  animation:
+    huddle-slideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    huddle-slideOut 0.3s ease-in 3.7s forwards;
+  max-width: 280px;
+}
+
+.huddle-toast.success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.huddle-toast.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.huddle-toast.info {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.huddle-toast.warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* ---------- Status Badge ---------- */
+.huddle-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: var(--hud-radius-pill);
+  border: 2px solid;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.huddle-badge-live {
+  background: rgba(244, 63, 94, 0.1);
+  color: var(--hud-accent);
+  border-color: var(--hud-accent);
+}
+
+.huddle-badge-connected {
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--hud-success);
+  border-color: var(--hud-success);
+}
+
+/* ---------- Base Container ---------- */
+.huddle-sidebar {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  z-index: 99999;
+  right: 0;
+  top: 0;
+  width: 340px;
+  height: 100vh;
+  background: var(--hud-bg-cream);
+  font-family: var(--hud-font);
+  color: var(--hud-text-dark);
+  border-left: var(--hud-border-width) solid var(--hud-border);
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.08);
+  transform: translateX(0);
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.huddle-sidebar.hidden {
+  transform: translateX(100%);
+}
+
+/* ---------- Header ---------- */
+.huddle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: var(--hud-primary);
+  color: var(--hud-text-light);
+  border-bottom: var(--hud-border-width) solid var(--hud-border);
+}
+
+.huddle-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.5px;
+}
+
+.huddle-logo-icon {
+  font-size: 24px;
+}
+
+.huddle-close-btn {
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 700;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--hud-radius-sm);
+  background: rgba(255, 255, 255, 0.2);
+  transition:
+    background var(--hud-transition),
+    transform var(--hud-transition);
+}
+
+.huddle-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+/* ---------- Inputs & Cards ---------- */
+.huddle-card {
+  background: var(--hud-bg-card);
+  border: var(--hud-border-width) solid var(--hud-border);
+  border-radius: var(--hud-radius);
+  padding: 16px;
+  margin: 16px;
+  box-shadow: var(--hud-shadow);
+}
+
+.huddle-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--hud-text-muted);
+  margin-bottom: 8px;
+}
+
+.huddle-input {
+  width: 100%;
+  padding: 12px;
+  border: var(--hud-border-width) solid var(--hud-border);
+  border-radius: var(--hud-radius-sm);
+  font-family: var(--hud-font);
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--hud-bg-cream);
+  outline: none;
+  box-sizing: border-box;
+  transition: box-shadow var(--hud-transition);
+}
+
+.huddle-input:focus {
+  box-shadow: inset 2px 2px 0px rgba(0, 0, 0, 0.1);
+}
+
+/* ---------- Buttons ---------- */
+.huddle-btn {
+  width: 100%;
+  padding: 14px;
+  border: var(--hud-border-width) solid var(--hud-border);
+  border-radius: var(--hud-radius-sm);
+  font-family: var(--hud-font);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--hud-shadow);
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
+  text-align: center;
+}
+
+.huddle-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: var(--hud-shadow-sm);
+}
+
+.huddle-btn-primary {
+  background: var(--hud-primary);
+  color: var(--hud-text-light);
+}
+
+.huddle-btn-secondary {
+  background: var(--hud-bg-cream);
+  color: var(--hud-text-dark);
+}
+
+.huddle-btn-twitch {
+  background: var(--hud-twitch);
+  color: var(--hud-text-light);
+}
+
+.huddle-btn-small {
+  padding: 10px;
+  font-size: 14px;
+}
+
+.huddle-btn-danger {
+  background: var(--hud-accent);
+  color: var(--hud-text-light);
+}
+
+.huddle-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: var(--hud-shadow);
+}
+
+/* ---------- Open Button (acts as a toggle tab) ---------- */
+.huddle-open-btn {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%) translateX(0);
+  z-index: 99998;
+  background: var(--hud-primary);
+  color: var(--hud-text-light);
+  border: var(--hud-border-width) solid var(--hud-border);
+  border-right: none;
+  border-radius: var(--hud-radius) 0 0 var(--hud-radius);
+  padding: 12px 8px 12px 12px;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: -4px 4px 0px var(--hud-border);
+  transition:
+    transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background var(--hud-transition),
+    padding var(--hud-transition);
+  writing-mode: vertical-rl;
+  font-family: var(--hud-font);
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.huddle-open-btn:hover {
+  padding-right: 14px;
+  background: var(--hud-primary-light);
+}
+
+.huddle-open-btn.sidebar-open {
+  transform: translateY(-50%) translateX(-340px);
+  box-shadow: -2px 2px 0px var(--hud-border);
+}
+
+/* ---------- Animations ---------- */
+@keyframes huddle-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes huddle-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+
+@keyframes huddle-fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes huddle-slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes huddle-slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+}
+
+@keyframes huddle-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Loading Spinner ---------- */
+.huddle-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--hud-bg-cream);
+  border-top-color: var(--hud-primary);
+  border-radius: 50%;
+  animation: huddle-spin 0.8s linear infinite;
+}
+
+/* ---------- Empty State ---------- */
+.huddle-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px;
+  text-align: center;
+}
+
+.huddle-empty-icon {
+  font-size: 32px;
+  animation: huddle-bounce 2s ease-in-out infinite;
+}
+
+.huddle-empty-text {
+  font-size: 13px;
+  color: var(--hud-text-muted);
+  font-weight: 500;
+}
+
+/* ---------- Scrollbar ---------- */
+.huddle-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.huddle-sidebar::-webkit-scrollbar-track {
+  background: var(--hud-bg-cream);
+}
+
+.huddle-sidebar::-webkit-scrollbar-thumb {
+  background: var(--hud-primary-light);
+  border-radius: 3px;
+}
+
+.huddle-sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--hud-primary);
+}
+
+/* ---------- Toggle Switch ---------- */
+.huddle-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+}
+.huddle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.huddle-switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--hud-text-muted);
+  transition: 0.4s;
+  border-radius: 22px;
+}
+.huddle-switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+.huddle-switch input:checked + .huddle-switch-slider {
+  background-color: var(--hud-success);
+}
+.huddle-switch input:checked + .huddle-switch-slider:before {
+  transform: translateX(18px);
 }

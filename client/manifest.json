@@ -1,17 +1,39 @@
 {
-	"manifest_version": 2,
-	"name": "WeWatched",
-	"description": "A chrome extension for watching with your friends and family.",
-	"version": "1.0.0",
-	"content_scripts": [
-		{
-			"matches": ["https://www.youtube.com/watch?*",
-						"https://www.netflix.com/*",
-						"https://www.hotstar.com/*",
-						"https://www.primevideo.com/*"],
-			"js": ["socketioclient.js", "content.js"],
-			"css": ["style.css"]
-		}
-	],
-	"web_accessible_resources": ["style.css"]
+  "manifest_version": 3,
+  "name": "Huddle",
+  "description": "Watch videos together in real-time sync. Create rooms, invite friends, or share with your Twitch audience.",
+  "version": "2.0.0",
+  "action": {},
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/watch?*",
+        "https://www.netflix.com/*",
+        "https://www.hotstar.com/*",
+        "https://www.primevideo.com/*",
+        "https://clips.twitch.tv/*"
+      ],
+      "js": ["socketioclient.js", "content.js"],
+      "css": ["style.css"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["style.css"],
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://www.netflix.com/*",
+        "https://www.hotstar.com/*",
+        "https://www.primevideo.com/*",
+        "https://clips.twitch.tv/*"
+      ]
+    }
+  ],
+  "permissions": ["scripting", "storage"],
+  "externally_connectable": {
+    "matches": ["https://*.vercel.app/*", "http://localhost/*"]
+  }
 }
