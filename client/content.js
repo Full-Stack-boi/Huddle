@@ -79,12 +79,13 @@ socket.on("roomCreated", ({ roomCode }) => {
   renderRoomView();
   startVideoSync();
   openSidebar(); // Auto-open sidebar so user knows room is ready
+  applyDynamicTheme(getVideoMetadata().source); // Match theme to current platform
   showToast(`Room created! Code: ${roomCode}`, "success");
 });
 
 socket.on(
   "joinSuccess",
-  ({ roomCode, hostName, videoUrl, videoTitle, viewers }) => {
+  ({ roomCode, hostName, videoUrl, videoTitle, viewers, source }) => {
     currentRoomCode = roomCode;
     currentHostVideoUrl = videoUrl;
     currentHostName = hostName; // Store the Host's display name
@@ -93,6 +94,7 @@ socket.on(
     renderRoomView();
     startVideoSync();
     openSidebar(); // Auto-open sidebar so user knows they joined successfully
+    applyDynamicTheme(source); // Match theme to host's video platform!
     showToast(`Joined ${hostName}'s room!`, "success");
   },
 );
@@ -123,6 +125,7 @@ socket.on("roomDissolved", () => {
   showPage("main");
   renderMainView();
   openSidebar(); // Force sidebar open to notify the viewer that the room was closed
+  applyDynamicTheme(getVideoMetadata().source); // Reset to local page platform
   showToast("Room has been closed by the host.", "warning");
 });
 
@@ -225,7 +228,7 @@ function checkAutoJoin() {
   const match = hash.match(/#huddle_room=([A-Z0-9-]+)/i);
   if (match) {
     const roomCode = match[1].toUpperCase();
-    
+
     // Parse name if present
     const nameMatch = hash.match(/name=([^&]+)/i);
     let autoJoinName = null;
@@ -244,8 +247,7 @@ function checkAutoJoin() {
     // Wait for socket connection then join
     const tryJoin = () => {
       if (mySocketId) {
-        const savedName =
-          autoJoinName || displayName || "Viewer";
+        const savedName = autoJoinName || displayName || "Viewer";
         displayName = savedName;
         socket.emit("joinRoom", { roomCode, name: displayName });
       } else {
@@ -288,7 +290,7 @@ function getVideoMetadata() {
     }
   } else if (url.includes("netflix.com")) {
     source = "Netflix";
-  } else if (url.includes("hotstar.com")) {
+  } else if (url.includes("hotstar.com") || url.includes("disneyplus.com")) {
     source = "Disney+ Hotstar";
   } else if (url.includes("primevideo.com")) {
     source = "Prime Video";
@@ -478,6 +480,85 @@ function closeSidebar() {
   }
 }
 
+/* ---------- UI Theme Management Helpers ---------- */
+function applyDynamicTheme(sourcePlatform) {
+  const sidebar = document.getElementById("huddle-sidebar");
+  if (!sidebar) return;
+
+  // Elegant pastel palettes matching each platform
+  const themes = {
+    YouTube: {
+      primary: "#f43f5e", // Soft Coral Red
+      "primary-light": "#fb7185", // Light Coral
+      secondary: "#06b6d4", // Soft Cyan
+      "bg-cream": "#fff5f5", // Ultra soft red tint
+      icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" style="display:inline-block; vertical-align:middle;"><path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.107C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.388.511a3.003 3.003 0 0 0-2.11 2.107C0 8.053 0 12 0 12s0 3.947.502 5.837a3.003 3.003 0 0 0 2.11 2.107c1.883.511 9.388.511 9.388.511s7.505 0 9.388-.511a3.003 3.003 0 0 0 2.11-2.107C24 15.947 24 12 24 12s0-3.947-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`,
+    },
+    "Twitch Clip": {
+      primary: "#8b5cf6", // Soft Twitch Purple
+      "primary-light": "#a78bfa", // Light Purple
+      secondary: "#06b6d4", // Soft Cyan
+      "bg-cream": "#f8f6ff", // Ultra soft purple tint
+      icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" style="display:inline-block; vertical-align:middle;"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg>`,
+    },
+    Netflix: {
+      primary: "#e11d48", // Soft Netflix Crimson
+      "primary-light": "#fb7185", // Light Crimson
+      secondary: "#10b981", // Soft Green
+      "bg-cream": "#fff5f5", // Ultra soft red tint
+      icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" style="display:inline-block; vertical-align:middle;"><path d="M4 0h3.8l5.8 13.9V0h3.8v24h-3.8l-5.8-13.9V24H4z"/></svg>`,
+    },
+    "Disney+ Hotstar": {
+      primary: "#1d4ed8", // Deep Royal Blue
+      "primary-light": "#60a5fa", // Light Royal Blue
+      secondary: "#f43f5e", // Soft Pink/Red
+      "bg-cream": "#f0f4ff", // Ultra soft blue tint
+      icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" style="display:inline-block; vertical-align:middle;"><path d="M12 0l3.09 6.26L22 7.27l-5 4.87 1.18 6.87L12 15.77l-6.18 3.25L7 12.14 2 7.27l6.91-1.01L12 0z"/></svg>`,
+    },
+    "Prime Video": {
+      primary: "#0284c7", // Sky Prime Blue
+      "primary-light": "#38bdf8", // Light Prime Blue
+      secondary: "#f59e0b", // Soft Amber/Yellow
+      "bg-cream": "#f0f9ff", // Ultra soft cyan tint
+      icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" style="display:inline-block; vertical-align:middle;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`,
+    },
+    Default: {
+      primary: "#8b5cf6", // Pastel Violet
+      "primary-light": "#a78bfa", // Light Violet
+      secondary: "#06b6d4", // Soft Cyan
+      "bg-cream": "#fff8f0", // Pastel Peach/Cream
+      icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" style="display:inline-block; vertical-align:middle;"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg>`,
+    },
+  };
+
+  const theme = themes[sourcePlatform] || themes["Default"];
+
+  // Set the CSS variables dynamically on the sidebar container
+  sidebar.style.setProperty("--hud-primary", theme["primary"]);
+  sidebar.style.setProperty("--hud-primary-light", theme["primary-light"]);
+  sidebar.style.setProperty("--hud-secondary", theme["secondary"]);
+  sidebar.style.setProperty("--hud-bg-cream", theme["bg-cream"]);
+
+  // Update floating button variables as well
+  const openBtn = document.getElementById("huddle-open-btn");
+  if (openBtn) {
+    openBtn.style.setProperty("--hud-primary", theme["primary"]);
+    openBtn.style.setProperty("--hud-primary-light", theme["primary-light"]);
+  }
+
+  // Update dynamic brand SVGs
+  const logoIcon = document.getElementById("huddle-logo-icon");
+  const openBtnIcon = document.querySelector(
+    "#huddle-open-btn .huddle-btn-icon-wrapper",
+  );
+  if (logoIcon) {
+    logoIcon.innerHTML = theme["icon"];
+  }
+  if (openBtnIcon) {
+    openBtnIcon.innerHTML = theme["icon"];
+  }
+}
+
 /* ---------- UI: Build Sidebar ---------- */
 function buildSidebar() {
   if (document.getElementById("huddle-sidebar")) return;
@@ -492,7 +573,7 @@ function buildSidebar() {
   header.className = "huddle-header";
   header.innerHTML = `
     <div class="huddle-logo">
-      <span class="huddle-logo-icon">🎬</span>
+      <span class="huddle-logo-icon" id="huddle-logo-icon">🎬</span>
       <span class="huddle-logo-text">Huddle</span>
     </div>
   `;
@@ -524,7 +605,7 @@ function buildSidebar() {
   const openBtn = document.createElement("div");
   openBtn.className = "huddle-open-btn";
   openBtn.id = "huddle-open-btn";
-  openBtn.textContent = "🎬";
+  openBtn.innerHTML = `<span class="huddle-btn-icon-wrapper" style="display:inline-block; writing-mode:horizontal-tb; line-height:1;">🎬</span>`;
 
   // Apply saved visibility preference
   if (localStorage.getItem("huddle_show_floating_btn") === "false") {
@@ -554,6 +635,9 @@ function buildSidebar() {
 
   // Render initial view
   renderMainView();
+
+  // Apply initial dynamic theme based on page context
+  applyDynamicTheme(getVideoMetadata().source);
 }
 
 /* ---------- UI: Page Navigation ---------- */
@@ -652,12 +736,18 @@ function renderRoomView() {
     try {
       const currentUrl = new URL(window.location.href);
       const targetUrl = new URL(currentHostVideoUrl);
-      if (currentUrl.hostname.includes("youtube.com") && targetUrl.hostname.includes("youtube.com")) {
-        isOnHostVideo = currentUrl.searchParams.get("v") === targetUrl.searchParams.get("v");
+      if (
+        currentUrl.hostname.includes("youtube.com") &&
+        targetUrl.hostname.includes("youtube.com")
+      ) {
+        isOnHostVideo =
+          currentUrl.searchParams.get("v") === targetUrl.searchParams.get("v");
       } else {
-        isOnHostVideo = currentUrl.origin + currentUrl.pathname === targetUrl.origin + targetUrl.pathname;
+        isOnHostVideo =
+          currentUrl.origin + currentUrl.pathname ===
+          targetUrl.origin + targetUrl.pathname;
       }
-    } catch(e) {}
+    } catch (e) {}
   }
 
   page.innerHTML = `
@@ -710,7 +800,10 @@ function renderRoomView() {
       const list = document.getElementById("huddle-viewers-list");
       const arrow = document.getElementById("huddle-viewers-arrow");
       if (list) list.style.display = viewersExpanded ? "flex" : "none";
-      if (arrow) arrow.style.transform = viewersExpanded ? "rotate(90deg)" : "rotate(0deg)";
+      if (arrow)
+        arrow.style.transform = viewersExpanded
+          ? "rotate(90deg)"
+          : "rotate(0deg)";
     });
   }
 
@@ -759,7 +852,7 @@ function renderViewersList() {
   if (!list) return;
 
   // 1. Host item is always at the top!
-  const hostIsMe = isHost || (displayName === currentHostName);
+  const hostIsMe = isHost || displayName === currentHostName;
   let html = `
     <div class="huddle-viewer-item host" title="Room Host">
       <span class="huddle-viewer-dot" style="background: var(--hud-primary);"></span>
@@ -932,7 +1025,10 @@ function handleCreateRoom() {
 
   const meta = getVideoMetadata();
   if (meta.source === "unknown") {
-    showToast("You can only Host a room on a supported video page (e.g. a YouTube video)!", "error");
+    showToast(
+      "You can only Host a room on a supported video page (e.g. a YouTube video)!",
+      "error",
+    );
     return;
   }
 
@@ -943,10 +1039,16 @@ function handleCreateRoom() {
   else if (url.includes("netflix.com/watch")) isValidVideoPage = true;
   else if (url.includes("clips.twitch.tv")) isValidVideoPage = true;
   else if (url.includes("twitch.tv/videos")) isValidVideoPage = true;
+  else if (url.includes("hotstar.com") || url.includes("disneyplus.com"))
+    isValidVideoPage = true;
+  else if (url.includes("primevideo.com")) isValidVideoPage = true;
   else if (document.querySelector("video")) isValidVideoPage = true; // Fallback if a video tag is already present
 
   if (!isValidVideoPage) {
-    showToast("Please navigate to an actual video page before hosting!", "error");
+    showToast(
+      "Please navigate to an actual video page before hosting!",
+      "error",
+    );
     return;
   }
 
@@ -998,6 +1100,7 @@ function handleLeaveRoom() {
   stopVideoSync();
   showPage("main");
   renderMainView();
+  applyDynamicTheme(getVideoMetadata().source); // Reset to local page platform
   showToast("Left the room", "info");
 }
 
