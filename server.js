@@ -3,15 +3,15 @@
 // Real-time video synchronization server using Socket.IO
 // ============================================================================
 
-const express = require('express');
-const http = require('http');
+const express = require("express");
+const http = require("http");
 
 const app = express();
 const server = http.createServer(app);
-const io = require('socket.io')(server, {
+const io = require("socket.io")(server, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST'],
+    origin: "*",
+    methods: ["GET", "POST"],
   },
 });
 
@@ -55,14 +55,14 @@ const rooms = new Map();
  * Retries if the code already exists (extremely unlikely collision).
  */
 function generateRoomCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // removed ambiguous: I,1,O,0
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // removed ambiguous: I,1,O,0
   let code;
   do {
-    let suffix = '';
+    let suffix = "";
     for (let i = 0; i < 4; i++) {
       suffix += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    code = 'HUD-' + suffix;
+    code = "HUD-" + suffix;
   } while (rooms.has(code));
   return code;
 }
@@ -95,16 +95,19 @@ function getRoomMeta(room, roomCode) {
 
 // CORS middleware for HTTP routes
 app.use(function (req, res, next) {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept",
+  );
   next();
 });
 
 // Health-check / landing
-app.get('/', function (req, res) {
+app.get("/", function (req, res) {
   res.json({
-    name: 'Huddle Sync Server',
-    status: 'running',
+    name: "Huddle Sync Server",
+    status: "running",
     activeRooms: rooms.size,
   });
 });
@@ -114,12 +117,12 @@ app.get('/', function (req, res) {
  * Returns room metadata as JSON.
  * Used by the Landing Page to look up a room before joining.
  */
-app.get('/api/room/:code', function (req, res) {
+app.get("/api/room/:code", function (req, res) {
   var code = req.params.code.toUpperCase();
   var room = rooms.get(code);
 
   if (!room) {
-    return res.status(404).json({ error: 'Room not found', roomCode: code });
+    return res.status(404).json({ error: "Room not found", roomCode: code });
   }
 
   res.json(getRoomMeta(room, code));
@@ -129,33 +132,33 @@ app.get('/api/room/:code', function (req, res) {
 // Socket.IO – Connection Handling
 // ============================================================================
 
-io.on('connection', function (socket) {
-  console.log('[connect] socket=%s', socket.id);
+io.on("connection", function (socket) {
+  console.log("[connect] socket=%s", socket.id);
 
   // --------------------------------------------------
   // whoami – immediately tell the client its socket ID
   // --------------------------------------------------
-  socket.emit('whoami', { id: socket.id });
+  socket.emit("whoami", { id: socket.id });
 
   // --------------------------------------------------
   // createRoom – host creates a new watch room
   // --------------------------------------------------
-  socket.on('createRoom', function (data) {
+  socket.on("createRoom", function (data) {
     var roomCode = generateRoomCode();
 
     var room = {
-      hostId: socket.id,          // persistent identifier for this host session
-      hostSocketId: socket.id,    // current socket (may change on reconnect)
-      hostName: data.hostName || 'Host',
-      videoUrl: data.videoUrl || '',
-      videoTitle: data.videoTitle || '',
-      videoThumbnail: data.videoThumbnail || '',
-      source: data.source || '',
+      hostId: socket.id, // persistent identifier for this host session
+      hostSocketId: socket.id, // current socket (may change on reconnect)
+      hostName: data.hostName || "Host",
+      videoUrl: data.videoUrl || "",
+      videoTitle: data.videoTitle || "",
+      videoThumbnail: data.videoThumbnail || "",
+      source: data.source || "",
       hostTime: 0,
       videoDuration: data.videoDuration || 0,
       isHostPaused: true,
       isTwitchRoom: data.isTwitchRoom || false,
-      twitchChannel: data.twitchChannel || '',
+      twitchChannel: data.twitchChannel || "",
       createdAt: new Date().toISOString(),
       viewers: new Set(),
       disconnectTimer: null,
@@ -167,26 +170,33 @@ io.on('connection', function (socket) {
     // Tag this socket so we know which room it hosts
     socket.data = socket.data || {};
     socket.data.hostedRoom = roomCode;
-    socket.data.name = data.hostName || 'Host';
+    socket.data.name = data.hostName || "Host";
 
-    console.log('[createRoom] room=%s host=%s (%s)', roomCode, room.hostName, socket.id);
+    console.log(
+      "[createRoom] room=%s host=%s (%s)",
+      roomCode,
+      room.hostName,
+      socket.id,
+    );
 
-    socket.emit('roomCreated', { roomCode: roomCode });
+    socket.emit("roomCreated", { roomCode: roomCode });
   });
 
   // --------------------------------------------------
   // joinRoom – viewer joins an existing room
   // --------------------------------------------------
-  socket.on('joinRoom', function (data) {
-    var code = (data.roomCode || '').toUpperCase();
+  socket.on("joinRoom", function (data) {
+    var code = (data.roomCode || "").toUpperCase();
     var room = rooms.get(code);
 
     if (!room) {
-      socket.emit('joinError', { message: 'Room "' + code + '" does not exist.' });
+      socket.emit("joinError", {
+        message: 'Room "' + code + '" does not exist.',
+      });
       return;
     }
 
-    var viewerName = data.name || 'Viewer';
+    var viewerName = data.name || "Viewer";
 
     // Add viewer to the room
     room.viewers.add(viewerName);
@@ -197,11 +207,16 @@ io.on('connection', function (socket) {
     socket.data.joinedRoom = code;
     socket.data.name = viewerName;
 
-    console.log('[joinRoom] room=%s viewer=%s (%s) viewers=%d',
-      code, viewerName, socket.id, room.viewers.size);
+    console.log(
+      "[joinRoom] room=%s viewer=%s (%s) viewers=%d",
+      code,
+      viewerName,
+      socket.id,
+      room.viewers.size,
+    );
 
     // Acknowledge the viewer
-    socket.emit('joinSuccess', {
+    socket.emit("joinSuccess", {
       roomCode: code,
       hostName: room.hostName,
       videoUrl: room.videoUrl,
@@ -217,16 +232,47 @@ io.on('connection', function (socket) {
     });
 
     // Notify the entire room (including host)
-    io.to(code).emit('viewerJoined', {
+    io.to(code).emit("viewerJoined", {
       name: viewerName,
       viewerCount: room.viewers.size,
     });
   });
 
   // --------------------------------------------------
+  // leaveRoom – viewer explicitly leaves the room
+  // --------------------------------------------------
+  socket.on("leaveRoom", function (data) {
+    var code = (data.roomCode || "").toUpperCase();
+    var room = rooms.get(code);
+    var viewerName = data.name || (socket.data && socket.data.name);
+
+    if (room && viewerName) {
+      room.viewers.delete(viewerName);
+      socket.leave(code);
+
+      console.log(
+        "[leaveRoom] room=%s viewer=%s viewers=%d",
+        code,
+        viewerName,
+        room.viewers.size,
+      );
+
+      // Clear viewer tag from socket
+      if (socket.data) {
+        delete socket.data.joinedRoom;
+      }
+
+      io.to(code).emit("viewerLeft", {
+        name: viewerName,
+        viewerCount: room.viewers.size,
+      });
+    }
+  });
+
+  // --------------------------------------------------
   // videoSync – host broadcasts play/pause/seek/heartbeat
   // --------------------------------------------------
-  socket.on('videoSync', function (data) {
+  socket.on("videoSync", function (data) {
     var code = socket.data && socket.data.hostedRoom;
     if (!code) return;
 
@@ -237,26 +283,26 @@ io.on('connection', function (socket) {
     if (room.hostSocketId !== socket.id) return;
 
     // Update the room's authoritative state
-    if (typeof data.hostTime === 'number') {
+    if (typeof data.hostTime === "number") {
       room.hostTime = data.hostTime;
     }
-    if (typeof data.isHostPaused === 'boolean') {
+    if (typeof data.isHostPaused === "boolean") {
       room.isHostPaused = data.isHostPaused;
     }
 
     // Broadcast to all viewers in the room (excluding the host)
-    socket.to(code).emit('videoSync', {
+    socket.to(code).emit("videoSync", {
       hostTime: room.hostTime,
       isHostPaused: room.isHostPaused,
-      type: data.type || 'heartbeat',
+      type: data.type || "heartbeat",
     });
   });
 
   // --------------------------------------------------
   // updateRoomMeta – host changes the video mid-session
   // --------------------------------------------------
-  socket.on('updateRoomMeta', function (data) {
-    var code = (data.roomCode || '').toUpperCase();
+  socket.on("updateRoomMeta", function (data) {
+    var code = (data.roomCode || "").toUpperCase();
     var room = rooms.get(code);
     if (!room) return;
 
@@ -266,18 +312,20 @@ io.on('connection', function (socket) {
     // Merge updated fields
     if (data.videoUrl !== undefined) room.videoUrl = data.videoUrl;
     if (data.videoTitle !== undefined) room.videoTitle = data.videoTitle;
-    if (data.videoThumbnail !== undefined) room.videoThumbnail = data.videoThumbnail;
+    if (data.videoThumbnail !== undefined)
+      room.videoThumbnail = data.videoThumbnail;
     if (data.source !== undefined) room.source = data.source;
-    if (data.videoDuration !== undefined) room.videoDuration = data.videoDuration;
+    if (data.videoDuration !== undefined)
+      room.videoDuration = data.videoDuration;
 
     // Reset playback position for the new video
     room.hostTime = 0;
     room.isHostPaused = true;
 
-    console.log('[updateRoomMeta] room=%s newVideo=%s', code, room.videoTitle);
+    console.log("[updateRoomMeta] room=%s newVideo=%s", code, room.videoTitle);
 
     // Notify viewers about the video change
-    socket.to(code).emit('updateRoomMeta', {
+    socket.to(code).emit("updateRoomMeta", {
       videoUrl: room.videoUrl,
       videoTitle: room.videoTitle,
       videoThumbnail: room.videoThumbnail,
@@ -289,18 +337,20 @@ io.on('connection', function (socket) {
   // --------------------------------------------------
   // reclaimRoom – host reconnects after a brief disconnect
   // --------------------------------------------------
-  socket.on('reclaimRoom', function (data) {
-    var code = (data.roomCode || '').toUpperCase();
+  socket.on("reclaimRoom", function (data) {
+    var code = (data.roomCode || "").toUpperCase();
     var room = rooms.get(code);
 
     if (!room) {
-      socket.emit('joinError', { message: 'Room "' + code + '" no longer exists.' });
+      socket.emit("joinError", {
+        message: 'Room "' + code + '" no longer exists.',
+      });
       return;
     }
 
     // Verify identity by host name (simple approach; can be upgraded to tokens)
     if (room.hostName !== data.hostName) {
-      socket.emit('joinError', { message: 'Host name does not match.' });
+      socket.emit("joinError", { message: "Host name does not match." });
       return;
     }
 
@@ -318,19 +368,58 @@ io.on('connection', function (socket) {
     socket.data.hostedRoom = code;
     socket.data.name = data.hostName;
 
-    console.log('[reclaimRoom] room=%s host=%s newSocket=%s', code, data.hostName, socket.id);
+    console.log(
+      "[reclaimRoom] room=%s host=%s newSocket=%s",
+      code,
+      data.hostName,
+      socket.id,
+    );
 
-    socket.emit('roomCreated', { roomCode: code });
+    socket.emit("roomCreated", { roomCode: code });
 
     // Notify viewers the host is back
-    io.to(code).emit('hostReconnected', { hostName: room.hostName });
+    io.to(code).emit("hostReconnected", { hostName: room.hostName });
+  });
+
+  // --------------------------------------------------
+  // closeRoom – host explicitly dissolves the room
+  // --------------------------------------------------
+  socket.on("closeRoom", function (data) {
+    var code = (data.roomCode || "").toUpperCase();
+    var room = rooms.get(code);
+
+    if (room) {
+      if (room.hostSocketId === socket.id || room.hostId === socket.id) {
+        console.log("[closeRoom] room=%s – host dissolved room", code);
+
+        // Cancel disconnect timer
+        if (room.disconnectTimer) {
+          clearTimeout(room.disconnectTimer);
+          room.disconnectTimer = null;
+        }
+
+        // Notify viewers
+        io.to(code).emit("roomDissolved");
+
+        // Force all sockets out of the room
+        io.in(code).socketsLeave(code);
+
+        // Delete room
+        rooms.delete(code);
+
+        // Clear hostedRoom tag
+        if (socket.data) {
+          delete socket.data.hostedRoom;
+        }
+      }
+    }
   });
 
   // --------------------------------------------------
   // disconnect – clean up rooms on socket disconnect
   // --------------------------------------------------
-  socket.on('disconnect', function () {
-    console.log('[disconnect] socket=%s', socket.id);
+  socket.on("disconnect", function () {
+    console.log("[disconnect] socket=%s", socket.id);
 
     var data = socket.data || {};
 
@@ -340,15 +429,18 @@ io.on('connection', function (socket) {
       var room = rooms.get(code);
 
       if (room && room.hostSocketId === socket.id) {
-        console.log('[hostDisconnect] room=%s – starting 30s grace period', code);
+        console.log(
+          "[hostDisconnect] room=%s – starting 30s grace period",
+          code,
+        );
 
         // Start a 30-second grace period
         room.disconnectTimer = setTimeout(function () {
-          console.log('[hostTimeout] room=%s – dissolving room', code);
+          console.log("[hostTimeout] room=%s – dissolving room", code);
 
           // Notify all remaining viewers
-          io.to(code).emit('roomDissolved', {
-            message: 'The host has left. This room has been closed.',
+          io.to(code).emit("roomDissolved", {
+            message: "The host has left. This room has been closed.",
           });
 
           // Force all sockets out of the room
@@ -368,10 +460,14 @@ io.on('connection', function (socket) {
       if (viewerRoom && data.name) {
         viewerRoom.viewers.delete(data.name);
 
-        console.log('[viewerLeft] room=%s viewer=%s viewers=%d',
-          viewerCode, data.name, viewerRoom.viewers.size);
+        console.log(
+          "[viewerLeft] room=%s viewer=%s viewers=%d",
+          viewerCode,
+          data.name,
+          viewerRoom.viewers.size,
+        );
 
-        io.to(viewerCode).emit('viewerLeft', {
+        io.to(viewerCode).emit("viewerLeft", {
           name: data.name,
           viewerCount: viewerRoom.viewers.size,
         });
@@ -385,9 +481,9 @@ io.on('connection', function (socket) {
 // ============================================================================
 
 server.listen(PORT, function () {
-  console.log('');
-  console.log('  🟢  Huddle Sync Server is running');
-  console.log('  📡  Port: %d', PORT);
-  console.log('  🕐  Started at: %s', new Date().toISOString());
-  console.log('');
+  console.log("");
+  console.log("  🟢  Huddle Sync Server is running");
+  console.log("  📡  Port: %d", PORT);
+  console.log("  🕐  Started at: %s", new Date().toISOString());
+  console.log("");
 });

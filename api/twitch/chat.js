@@ -22,49 +22,59 @@ const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID;
 
 export default async function handler(req, res) {
   // ── Only accept POST ──────────────────────────────────────────────
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).json({ error: 'Method Not Allowed' });
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+    return res.status(405).json({ error: "Method Not Allowed" });
   }
 
   // ── Parse & validate body ─────────────────────────────────────────
-  const { accessToken, broadcasterId, message, videoUrl, roomUrl } = req.body || {};
+  const { accessToken, broadcasterId, message, videoUrl, roomUrl } =
+    req.body || {};
 
   if (!accessToken || !broadcasterId || !videoUrl || !roomUrl) {
     return res.status(400).json({
-      error: 'Missing required fields: accessToken, broadcasterId, videoUrl, roomUrl',
+      error:
+        "Missing required fields: accessToken, broadcasterId, videoUrl, roomUrl",
     });
   }
 
   if (!TWITCH_CLIENT_ID) {
-    console.error('TWITCH_CLIENT_ID environment variable is not set');
-    return res.status(500).json({ error: 'Server misconfiguration' });
+    console.error("TWITCH_CLIENT_ID environment variable is not set");
+    return res.status(500).json({ error: "Server misconfiguration" });
   }
 
   const headers = {
-    'Client-Id': TWITCH_CLIENT_ID,
+    "Client-Id": TWITCH_CLIENT_ID,
     Authorization: `Bearer ${accessToken}`,
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
 
   try {
     // ── Step 1: Verify the streamer is live ───────────────────────────
     const streamRes = await fetch(
       `https://api.twitch.tv/helix/streams?user_id=${encodeURIComponent(broadcasterId)}`,
-      { headers: { 'Client-Id': TWITCH_CLIENT_ID, Authorization: `Bearer ${accessToken}` } }
+      {
+        headers: {
+          "Client-Id": TWITCH_CLIENT_ID,
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
     );
 
     if (!streamRes.ok) {
       const errBody = await streamRes.text();
-      console.error('Twitch streams API error:', streamRes.status, errBody);
-      return res.status(502).json({ error: 'Failed to verify stream status', detail: errBody });
+      console.error("Twitch streams API error:", streamRes.status, errBody);
+      return res
+        .status(502)
+        .json({ error: "Failed to verify stream status", detail: errBody });
     }
 
     const streamData = await streamRes.json();
 
     if (!streamData.data || streamData.data.length === 0) {
       return res.status(422).json({
-        error: 'Streamer is not currently live. Share to Chat requires an active stream.',
+        error:
+          "Streamer is not currently live. Share to Chat requires an active stream.",
       });
     }
 
@@ -75,25 +85,31 @@ export default async function handler(req, res) {
     }
     parts.push(`🎬 ${videoUrl}`);
     parts.push(`👉 Join the watch party: ${roomUrl}`);
-    const composedMessage = parts.join(' | ');
+    const composedMessage = parts.join(" | ");
 
     // ── Step 3: Send to Twitch chat ───────────────────────────────────
     // The sender_id must match the token owner, so we fetch the token owner first.
-    const usersRes = await fetch('https://api.twitch.tv/helix/users', { headers });
+    const usersRes = await fetch("https://api.twitch.tv/helix/users", {
+      headers,
+    });
     if (!usersRes.ok) {
       const errBody = await usersRes.text();
-      console.error('Twitch users API error:', usersRes.status, errBody);
-      return res.status(502).json({ error: 'Failed to identify token owner', detail: errBody });
+      console.error("Twitch users API error:", usersRes.status, errBody);
+      return res
+        .status(502)
+        .json({ error: "Failed to identify token owner", detail: errBody });
     }
     const usersData = await usersRes.json();
     const senderId = usersData.data?.[0]?.id;
 
     if (!senderId) {
-      return res.status(502).json({ error: 'Could not determine sender ID from token' });
+      return res
+        .status(502)
+        .json({ error: "Could not determine sender ID from token" });
     }
 
-    const chatRes = await fetch('https://api.twitch.tv/helix/chat/messages', {
-      method: 'POST',
+    const chatRes = await fetch("https://api.twitch.tv/helix/chat/messages", {
+      method: "POST",
       headers,
       body: JSON.stringify({
         broadcaster_id: broadcasterId,
@@ -104,8 +120,10 @@ export default async function handler(req, res) {
 
     if (!chatRes.ok) {
       const errBody = await chatRes.text();
-      console.error('Twitch chat API error:', chatRes.status, errBody);
-      return res.status(502).json({ error: 'Failed to send chat message', detail: errBody });
+      console.error("Twitch chat API error:", chatRes.status, errBody);
+      return res
+        .status(502)
+        .json({ error: "Failed to send chat message", detail: errBody });
     }
 
     const chatData = await chatRes.json();
@@ -117,7 +135,7 @@ export default async function handler(req, res) {
       twitchResponse: chatData,
     });
   } catch (err) {
-    console.error('Unexpected error in /api/twitch/chat:', err);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("Unexpected error in /api/twitch/chat:", err);
+    return res.status(500).json({ error: "Internal server error" });
   }
 }

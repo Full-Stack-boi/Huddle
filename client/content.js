@@ -5,11 +5,11 @@
 
 /* ---------- Configuration ---------- */
 const HUDDLE_CONFIG = {
-  syncServerUrl: "http://localhost:4000", // LOCAL TEST
+  syncServerUrl: "https://huddle-productions.up.railway.app", // Railway Production URL
   twitchClientId: "", // TODO: Set your Twitch Client ID
   twitchRedirectUri: "", // TODO: Set your Vercel OAuth redirect URL
-  heartbeatInterval: 2000, // 2 seconds
-  seekThreshold: 2, // seconds difference before force-sync
+  heartbeatInterval: 1000, // 1 second (faster sync)
+  seekThreshold: 0.5, // 0.5 seconds difference before force-sync (tighter sync)
   reconnectGracePeriod: 30000, // 30 seconds
   toastDuration: 4000, // 4 seconds
 };
@@ -19,9 +19,12 @@ let videoPlayer = null;
 let adTimer = null;
 let mySocketId = null;
 let currentRoomCode = null;
+let currentHostVideoUrl = null;
+let currentHostName = "";
 let isHost = false;
 let displayName = "";
 let viewersInRoom = [];
+let viewersExpanded = true;
 let isConnectedToTwitch = false;
 let twitchAccessToken = null;
 let twitchUserInfo = null;
@@ -47,7 +50,10 @@ socket.on("connect", () => {
   console.log("[Huddle] Connected to sync server");
   // If we were in a room before disconnect, try to reclaim/rejoin
   if (currentRoomCode && isHost) {
-    socket.emit("reclaimRoom", { roomCode: currentRoomCode, hostName: displayName });
+    socket.emit("reclaimRoom", {
+      roomCode: currentRoomCode,
+      hostName: displayName,
+    });
     showToast("Reconnecting to room...", "info");
   } else if (currentRoomCode && !isHost) {
     socket.emit("joinRoom", { roomCode: currentRoomCode, name: displayName });
@@ -68,20 +74,28 @@ socket.on("reconnect_failed", () => {
 socket.on("roomCreated", ({ roomCode }) => {
   currentRoomCode = roomCode;
   isHost = true;
+  currentHostName = displayName; // Host is the current host
   showPage("room");
   renderRoomView();
   startVideoSync();
+  openSidebar(); // Auto-open sidebar so user knows room is ready
   showToast(`Room created! Code: ${roomCode}`, "success");
 });
 
-socket.on("joinSuccess", ({ roomCode, hostName, videoUrl, videoTitle, viewers }) => {
-  currentRoomCode = roomCode;
-  viewersInRoom = viewers || [];
-  showPage("room");
-  renderRoomView();
-  startVideoSync();
-  showToast(`Joined ${hostName}'s room!`, "success");
-});
+socket.on(
+  "joinSuccess",
+  ({ roomCode, hostName, videoUrl, videoTitle, viewers }) => {
+    currentRoomCode = roomCode;
+    currentHostVideoUrl = videoUrl;
+    currentHostName = hostName; // Store the Host's display name
+    viewersInRoom = viewers || [];
+    showPage("room");
+    renderRoomView();
+    startVideoSync();
+    openSidebar(); // Auto-open sidebar so user knows they joined successfully
+    showToast(`Joined ${hostName}'s room!`, "success");
+  },
+);
 
 socket.on("joinError", ({ message }) => {
   showToast(message, "error");
@@ -103,10 +117,12 @@ socket.on("viewerLeft", ({ name, viewerCount }) => {
 socket.on("roomDissolved", () => {
   currentRoomCode = null;
   isHost = false;
+  currentHostName = "";
   viewersInRoom = [];
   stopVideoSync();
   showPage("main");
   renderMainView();
+  openSidebar(); // Force sidebar open to notify the viewer that the room was closed
   showToast("Room has been closed by the host.", "warning");
 });
 
@@ -209,13 +225,27 @@ function checkAutoJoin() {
   const match = hash.match(/#huddle_room=([A-Z0-9-]+)/i);
   if (match) {
     const roomCode = match[1].toUpperCase();
+    
+    // Parse name if present
+    const nameMatch = hash.match(/name=([^&]+)/i);
+    let autoJoinName = null;
+    if (nameMatch) {
+      autoJoinName = decodeURIComponent(nameMatch[1]);
+      saveDisplayName(autoJoinName);
+    }
+
     // Clean the hash so it doesn't persist
-    history.replaceState(null, "", window.location.pathname + window.location.search);
+    history.replaceState(
+      null,
+      "",
+      window.location.pathname + window.location.search,
+    );
 
     // Wait for socket connection then join
     const tryJoin = () => {
       if (mySocketId) {
-        const savedName = localStorage.getItem("huddle_display_name") || "Viewer";
+        const savedName =
+          autoJoinName || displayName || "Viewer";
         displayName = savedName;
         socket.emit("joinRoom", { roomCode, name: displayName });
       } else {
@@ -286,7 +316,11 @@ function startTwitchOAuth() {
     `&scope=${encodeURIComponent(scopes)}`;
 
   // Open OAuth popup
-  const popup = window.open(authUrl, "Huddle Twitch Login", "width=500,height=700");
+  const popup = window.open(
+    authUrl,
+    "Huddle Twitch Login",
+    "width=500,height=700",
+  );
 
   // Listen for token from popup
   window.addEventListener("message", function handler(event) {
@@ -344,7 +378,7 @@ async function checkTwitchLiveStatus() {
           Authorization: `Bearer ${twitchAccessToken}`,
           "Client-Id": HUDDLE_CONFIG.twitchClientId,
         },
-      }
+      },
     );
 
     const data = await res.json();
@@ -363,7 +397,9 @@ async function shareToTwitchChat() {
   }
 
   const messageInput = document.getElementById("huddle-twitch-message");
-  const customMessage = messageInput ? messageInput.value : "Come watch with me!";
+  const customMessage = messageInput
+    ? messageInput.value
+    : "Come watch with me!";
   const meta = getVideoMetadata();
 
   // Compose message: custom text + video URL + room URL
@@ -423,30 +459,32 @@ function showToast(message, type = "info") {
   }, HUDDLE_CONFIG.toastDuration);
 }
 
+/* ---------- UI Sidebar Visibility Helpers ---------- */
+function openSidebar() {
+  const s = document.getElementById("huddle-sidebar");
+  const b = document.getElementById("huddle-open-btn");
+  if (s && b) {
+    s.classList.add("huddle-visible");
+    b.classList.add("sidebar-open");
+  }
+}
+
+function closeSidebar() {
+  const s = document.getElementById("huddle-sidebar");
+  const b = document.getElementById("huddle-open-btn");
+  if (s && b) {
+    s.classList.remove("huddle-visible");
+    b.classList.remove("sidebar-open");
+  }
+}
+
 /* ---------- UI: Build Sidebar ---------- */
 function buildSidebar() {
   if (document.getElementById("huddle-sidebar")) return;
 
-  // Open button (acts as a toggle tab)
-  const openBtn = document.createElement("div");
-  openBtn.className = "huddle-open-btn";
-  openBtn.id = "huddle-open-btn";
-  openBtn.textContent = "🎬";
-  
-  // Apply saved visibility preference
-  if (localStorage.getItem("huddle_show_floating_btn") === "false") {
-    openBtn.style.display = "none";
-  }
-
-  openBtn.addEventListener("click", () => {
-    sidebar.classList.toggle("hidden");
-    openBtn.classList.toggle("sidebar-open");
-  });
-  document.body.appendChild(openBtn);
-
-  // Sidebar container
+  // Sidebar container (built first so openBtn closure can reference it)
   const sidebar = document.createElement("div");
-  sidebar.className = "huddle-sidebar hidden"; // Start hidden
+  sidebar.className = "huddle-sidebar"; // Starts closed by default via CSS (translateX 100%)
   sidebar.id = "huddle-sidebar";
 
   // Header
@@ -462,10 +500,7 @@ function buildSidebar() {
   const closeBtn = document.createElement("div");
   closeBtn.className = "huddle-close-btn";
   closeBtn.textContent = "✕";
-  closeBtn.addEventListener("click", () => {
-    sidebar.classList.add("hidden");
-    openBtn.classList.remove("sidebar-open");
-  });
+  closeBtn.addEventListener("click", closeSidebar);
   header.appendChild(closeBtn);
   sidebar.appendChild(header);
 
@@ -485,28 +520,48 @@ function buildSidebar() {
   roomPage.id = "huddle-page-room";
   sidebar.appendChild(roomPage);
 
+  // Open/toggle button
+  const openBtn = document.createElement("div");
+  openBtn.className = "huddle-open-btn";
+  openBtn.id = "huddle-open-btn";
+  openBtn.textContent = "🎬";
+
+  // Apply saved visibility preference
+  if (localStorage.getItem("huddle_show_floating_btn") === "false") {
+    openBtn.style.display = "none";
+  }
+
+  openBtn.addEventListener("click", () => {
+    sidebar.classList.toggle("huddle-visible");
+    openBtn.classList.toggle("sidebar-open");
+  });
+
   // Extension Icon Click Listener (from background.js)
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "HUDDLE_TOGGLE_SIDEBAR") {
-      const sidebar = document.getElementById("huddle-sidebar");
-      const openBtn = document.getElementById("huddle-open-btn");
-      if (sidebar && openBtn) {
-        sidebar.classList.toggle("hidden");
-        openBtn.classList.toggle("sidebar-open");
+      const s = document.getElementById("huddle-sidebar");
+      const b = document.getElementById("huddle-open-btn");
+      if (s && b) {
+        s.classList.toggle("huddle-visible");
+        b.classList.toggle("sidebar-open");
       }
     }
   });
 
+  // Append both to DOM together to avoid reflow between inserts
   document.body.appendChild(sidebar);
+  document.body.appendChild(openBtn);
 
-  // Render initial view // Render initial view
+  // Render initial view
   renderMainView();
 }
 
 /* ---------- UI: Page Navigation ---------- */
 function showPage(page) {
   currentPage = page;
-  document.querySelectorAll(".huddle-page").forEach((p) => p.classList.remove("active"));
+  document
+    .querySelectorAll(".huddle-page")
+    .forEach((p) => p.classList.remove("active"));
   const target = document.getElementById(`huddle-page-${page}`);
   if (target) target.classList.add("active");
 }
@@ -517,7 +572,8 @@ function renderMainView() {
   if (!page) return;
 
   const savedName = localStorage.getItem("huddle_display_name") || "";
-  const showFloating = localStorage.getItem("huddle_show_floating_btn") !== "false";
+  const showFloating =
+    localStorage.getItem("huddle_show_floating_btn") !== "false";
 
   page.innerHTML = `
     <div class="huddle-card">
@@ -557,22 +613,33 @@ function renderMainView() {
   `;
 
   // Event listeners
-  document.getElementById("huddle-create-room-btn").addEventListener("click", handleCreateRoom);
-  document.getElementById("huddle-join-btn").addEventListener("click", handleJoinRoom);
-  document.getElementById("huddle-twitch-nav-btn").addEventListener("click", () => {
-    showPage("twitch");
-    renderTwitchView();
-  });
-  
+  document
+    .getElementById("huddle-create-room-btn")
+    .addEventListener("click", handleCreateRoom);
+  document
+    .getElementById("huddle-join-btn")
+    .addEventListener("click", handleJoinRoom);
+  document
+    .getElementById("huddle-twitch-nav-btn")
+    .addEventListener("click", () => {
+      showPage("twitch");
+      renderTwitchView();
+    });
+
   // Floating button toggle listener
-  document.getElementById("huddle-toggle-floating").addEventListener("change", (e) => {
-    const isChecked = e.target.checked;
-    localStorage.setItem("huddle_show_floating_btn", isChecked ? "true" : "false");
-    const openBtn = document.getElementById("huddle-open-btn");
-    if (openBtn) {
-      openBtn.style.display = isChecked ? "block" : "none";
-    }
-  });
+  document
+    .getElementById("huddle-toggle-floating")
+    .addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      localStorage.setItem(
+        "huddle_show_floating_btn",
+        isChecked ? "true" : "false",
+      );
+      const openBtn = document.getElementById("huddle-open-btn");
+      if (openBtn) {
+        openBtn.style.display = isChecked ? "block" : "none";
+      }
+    });
 }
 
 /* ---------- UI: Room Page ---------- */
@@ -580,27 +647,53 @@ function renderRoomView() {
   const page = document.getElementById("huddle-page-room");
   if (!page) return;
 
+  let isOnHostVideo = true;
+  if (currentHostVideoUrl) {
+    try {
+      const currentUrl = new URL(window.location.href);
+      const targetUrl = new URL(currentHostVideoUrl);
+      if (currentUrl.hostname.includes("youtube.com") && targetUrl.hostname.includes("youtube.com")) {
+        isOnHostVideo = currentUrl.searchParams.get("v") === targetUrl.searchParams.get("v");
+      } else {
+        isOnHostVideo = currentUrl.origin + currentUrl.pathname === targetUrl.origin + targetUrl.pathname;
+      }
+    } catch(e) {}
+  }
+
   page.innerHTML = `
     <div class="huddle-room-code" id="huddle-room-code-display" title="Click to copy">
       ${currentRoomCode}
     </div>
     <div class="huddle-room-code-hint">Click to copy • Share this code!</div>
 
-    <div class="huddle-card">
-      <div class="huddle-card-title">👥 Viewers (${viewersInRoom.length + 1})</div>
-      <div class="huddle-viewers-list" id="huddle-viewers-list">
-        <div class="huddle-viewer-item host">
-          <span class="huddle-viewer-dot"></span>
-          ${displayName} ${isHost ? "👑" : ""}
-        </div>
+    ${
+      !isHost && currentHostVideoUrl && !isOnHostVideo
+        ? `
+      <button class="huddle-btn huddle-btn-twitch" id="huddle-open-host-video-btn" style="background: var(--hud-primary); margin-bottom: 15px;">
+        📺 Open Host's Video
+      </button>
+    `
+        : ""
+    }
+
+    <div class="huddle-card" style="padding: 12px 16px;">
+      <div class="huddle-card-title" id="huddle-viewers-toggle" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+        <span>👥 Viewers (${viewersInRoom.length + 1})</span>
+        <span id="huddle-viewers-arrow" style="font-size: 10px; transition: transform var(--hud-transition); transform: ${viewersExpanded ? "rotate(90deg)" : "rotate(0deg)"};">▶</span>
+      </div>
+      <div class="huddle-viewers-list" id="huddle-viewers-list" style="display: ${viewersExpanded ? "flex" : "none"}; margin-top: 10px;">
       </div>
     </div>
 
-    ${isHost ? `
+    ${
+      isHost
+        ? `
       <button class="huddle-btn huddle-btn-twitch" id="huddle-room-twitch-btn">
         🟣 Share on Twitch
       </button>
-    ` : ""}
+    `
+        : ""
+    }
 
     <button class="huddle-btn huddle-btn-accent" id="huddle-leave-room-btn">
       ${isHost ? "🔴 Close Room" : "🚪 Leave Room"}
@@ -609,15 +702,47 @@ function renderRoomView() {
 
   renderViewersList();
 
-  // Copy room code
-  document.getElementById("huddle-room-code-display").addEventListener("click", () => {
-    navigator.clipboard.writeText(currentRoomCode).then(() => {
-      showToast("Room code copied! 📋", "success");
+  // Viewers list toggle expand/collapse
+  const viewersToggle = document.getElementById("huddle-viewers-toggle");
+  if (viewersToggle) {
+    viewersToggle.addEventListener("click", () => {
+      viewersExpanded = !viewersExpanded;
+      const list = document.getElementById("huddle-viewers-list");
+      const arrow = document.getElementById("huddle-viewers-arrow");
+      if (list) list.style.display = viewersExpanded ? "flex" : "none";
+      if (arrow) arrow.style.transform = viewersExpanded ? "rotate(90deg)" : "rotate(0deg)";
     });
-  });
+  }
+
+  // Copy room code
+  document
+    .getElementById("huddle-room-code-display")
+    .addEventListener("click", () => {
+      navigator.clipboard.writeText(currentRoomCode).then(() => {
+        showToast("Room code copied!");
+      });
+    });
+
+  // Open host video
+  const openHostBtn = document.getElementById("huddle-open-host-video-btn");
+  if (openHostBtn) {
+    openHostBtn.addEventListener("click", () => {
+      try {
+        const targetUrl = new URL(currentHostVideoUrl);
+        targetUrl.hash = `huddle_room=${currentRoomCode}&name=${encodeURIComponent(displayName)}`;
+        window.open(targetUrl.toString(), "_blank");
+        // Leave room in current tab to prevent duplicates
+        handleLeaveRoom();
+      } catch (e) {
+        console.error("Invalid host URL", e);
+      }
+    });
+  }
 
   // Leave/close room
-  document.getElementById("huddle-leave-room-btn").addEventListener("click", handleLeaveRoom);
+  document
+    .getElementById("huddle-leave-room-btn")
+    .addEventListener("click", handleLeaveRoom);
 
   // Twitch share button (host only)
   const twitchBtn = document.getElementById("huddle-room-twitch-btn");
@@ -633,32 +758,37 @@ function renderViewersList() {
   const list = document.getElementById("huddle-viewers-list");
   if (!list) return;
 
+  // 1. Host item is always at the top!
+  const hostIsMe = isHost || (displayName === currentHostName);
   let html = `
-    <div class="huddle-viewer-item host">
-      <span class="huddle-viewer-dot"></span>
-      ${displayName} ${isHost ? "👑" : ""}
+    <div class="huddle-viewer-item host" title="Room Host">
+      <span class="huddle-viewer-dot" style="background: var(--hud-primary);"></span>
+      <strong>${currentHostName || "Host"}</strong> ${hostIsMe ? '<small style="color: var(--hud-text-muted); font-weight:normal;">(You)</small>' : ""}
+      <span style="margin-left: auto;">👑</span>
     </div>
   `;
 
+  // 2. Render other viewers
   viewersInRoom.forEach((name) => {
-    if (name !== displayName) {
-      html += `
-        <div class="huddle-viewer-item">
-          <span class="huddle-viewer-dot"></span>
-          ${name}
-        </div>
-      `;
-    }
+    // Skip host in the viewers loop to prevent duplicate display
+    if (name === currentHostName) return;
+
+    const isMe = name === displayName;
+    html += `
+      <div class="huddle-viewer-item ${isMe ? "me" : ""}">
+        <span class="huddle-viewer-dot" style="background: ${isMe ? "var(--hud-secondary)" : "var(--hud-success)"};"></span>
+        <span>${name} ${isMe ? '<small style="color: var(--hud-text-muted); font-weight:normal;">(You)</small>' : ""}</span>
+      </div>
+    `;
   });
 
   list.innerHTML = html;
 
-  // Update counter
-  const counter = page => {
-    const card = document.querySelector("#huddle-page-room .huddle-card-title");
-    if (card) card.textContent = `👥 Viewers (${viewersInRoom.length + 1})`;
-  };
-  counter();
+  // Update counter inside the header span
+  const counterSpan = document.querySelector("#huddle-viewers-toggle span");
+  if (counterSpan) {
+    counterSpan.textContent = `👥 Viewers (${viewersInRoom.length + 1})`;
+  }
 }
 
 /* ---------- UI: Twitch Page ---------- */
@@ -754,32 +884,42 @@ function renderTwitchView() {
   page.innerHTML = html;
 
   // Event listeners
-  document.getElementById("huddle-twitch-back")?.addEventListener("click", () => {
-    showPage(currentRoomCode ? "room" : "main");
-    if (currentRoomCode) renderRoomView();
-    else renderMainView();
-  });
+  document
+    .getElementById("huddle-twitch-back")
+    ?.addEventListener("click", () => {
+      showPage(currentRoomCode ? "room" : "main");
+      if (currentRoomCode) renderRoomView();
+      else renderMainView();
+    });
 
-  document.getElementById("huddle-twitch-connect")?.addEventListener("click", startTwitchOAuth);
-  document.getElementById("huddle-twitch-refresh")?.addEventListener("click", checkTwitchLiveStatus);
+  document
+    .getElementById("huddle-twitch-connect")
+    ?.addEventListener("click", startTwitchOAuth);
+  document
+    .getElementById("huddle-twitch-refresh")
+    ?.addEventListener("click", checkTwitchLiveStatus);
 
-  document.getElementById("huddle-twitch-share")?.addEventListener("click", () => {
-    const msgInput = document.getElementById("huddle-twitch-message");
-    if (msgInput) localStorage.setItem("huddle_twitch_msg", msgInput.value);
-    shareToTwitchChat();
-  });
+  document
+    .getElementById("huddle-twitch-share")
+    ?.addEventListener("click", () => {
+      const msgInput = document.getElementById("huddle-twitch-message");
+      if (msgInput) localStorage.setItem("huddle_twitch_msg", msgInput.value);
+      shareToTwitchChat();
+    });
 
-  document.getElementById("huddle-twitch-disconnect")?.addEventListener("click", () => {
-    twitchAccessToken = null;
-    twitchUserInfo = null;
-    twitchLiveStatus = null;
-    isConnectedToTwitch = false;
-    if (typeof chrome !== "undefined" && chrome.storage) {
-      chrome.storage.local.remove("huddle_twitch_token");
-    }
-    renderTwitchView();
-    showToast("Twitch disconnected", "info");
-  });
+  document
+    .getElementById("huddle-twitch-disconnect")
+    ?.addEventListener("click", () => {
+      twitchAccessToken = null;
+      twitchUserInfo = null;
+      twitchLiveStatus = null;
+      isConnectedToTwitch = false;
+      if (typeof chrome !== "undefined" && chrome.storage) {
+        chrome.storage.local.remove("huddle_twitch_token");
+      }
+      renderTwitchView();
+      showToast("Twitch disconnected", "info");
+    });
 }
 
 /* ---------- UI: Handlers ---------- */
@@ -790,10 +930,28 @@ function handleCreateRoom() {
     return;
   }
 
-  displayName = nameInput.value.trim();
-  localStorage.setItem("huddle_display_name", displayName);
-
   const meta = getVideoMetadata();
+  if (meta.source === "unknown") {
+    showToast("You can only Host a room on a supported video page (e.g. a YouTube video)!", "error");
+    return;
+  }
+
+  // Also verify that we are on a valid video watch page (not homepages or search pages)
+  const url = window.location.href;
+  let isValidVideoPage = false;
+  if (url.includes("youtube.com/watch")) isValidVideoPage = true;
+  else if (url.includes("netflix.com/watch")) isValidVideoPage = true;
+  else if (url.includes("clips.twitch.tv")) isValidVideoPage = true;
+  else if (url.includes("twitch.tv/videos")) isValidVideoPage = true;
+  else if (document.querySelector("video")) isValidVideoPage = true; // Fallback if a video tag is already present
+
+  if (!isValidVideoPage) {
+    showToast("Please navigate to an actual video page before hosting!", "error");
+    return;
+  }
+
+  displayName = nameInput.value.trim();
+  saveDisplayName(displayName);
 
   socket.emit("createRoom", {
     hostName: displayName,
@@ -821,7 +979,7 @@ function handleJoinRoom() {
   }
 
   displayName = nameInput.value.trim();
-  localStorage.setItem("huddle_display_name", displayName);
+  saveDisplayName(displayName);
 
   const roomCode = roomInput.value.trim().toUpperCase();
   socket.emit("joinRoom", { roomCode, name: displayName });
@@ -843,16 +1001,45 @@ function handleLeaveRoom() {
   showToast("Left the room", "info");
 }
 
+/* ---------- Persistent Cross-Origin Display Name Helpers ---------- */
+function loadDisplayName(callback) {
+  if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+    chrome.storage.local.get("huddle_display_name", (result) => {
+      if (result.huddle_display_name) {
+        displayName = result.huddle_display_name;
+        localStorage.setItem("huddle_display_name", displayName);
+      } else {
+        const localName = localStorage.getItem("huddle_display_name");
+        if (localName) {
+          displayName = localName;
+          chrome.storage.local.set({ huddle_display_name: displayName });
+        }
+      }
+      if (callback) callback();
+    });
+  } else {
+    displayName = localStorage.getItem("huddle_display_name") || "";
+    if (callback) callback();
+  }
+}
+
+function saveDisplayName(name) {
+  displayName = name;
+  localStorage.setItem("huddle_display_name", name);
+  if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+    chrome.storage.local.set({ huddle_display_name: name });
+  }
+}
+
 /* ---------- Initialize ---------- */
 function init() {
   injectExtensionMarker();
-  buildSidebar();
   restoreTwitchToken();
-  checkAutoJoin();
 
-  // Restore display name
-  const savedName = localStorage.getItem("huddle_display_name");
-  if (savedName) displayName = savedName;
+  loadDisplayName(() => {
+    buildSidebar();
+    checkAutoJoin();
+  });
 }
 
 // Wait for DOM to be ready
