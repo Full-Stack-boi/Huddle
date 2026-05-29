@@ -19,6 +19,10 @@ A **Chrome Extension** that lets you watch videos with friends in perfect real-t
 
 </div>
 
+> [!IMPORTANT]
+> 🟣 **Twitch Streamer Integration is currently under active development!**
+> Active development is focused on building, testing, and refining the Twitch OAuth implicit grant flow, live status checks, and the serverless proxy to let streamers share Huddle sync rooms directly with their chat in one click.
+
 ---
 
 ## 🎯 What is Huddle?
