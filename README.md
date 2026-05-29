@@ -84,33 +84,36 @@ When you join someone's room, your sidebar transitions dynamically in real time 
 
 Huddle uses a clean, decoupled **modular layout** designed for ease of maintenance and zero build overhead:
 
-```
-                  ┌───────────────────────────────────────────────┐
-                  │               Chrome Extension                │
-                  │  ┌─────────────────────────┐  ┌────────────┐  │
-                  │  │ scripts/ (11 modules)   │  │ styles/    │  │
-                  │  │ config.js, state.js,    │  │ huddle.css │  │
-                  │  │ video-sync.js, views.js │  └────────────┘  │
-                  │  └───────────┬─────────────┘                  │
-                  └──────────────┼────────────────────────────────┘
-                                 │ Socket.IO
-                                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                          Sync Server                            │
-│                        (server/index.js)                        │
-│                                                                 │
-│  • In-Memory Room Registry     • Host & Disconnect Grace Logic  │
-│  • Real-Time Video Sync        • HTTP REST Room Metadata API    │
-└──────────────────────▲──────────────────────────────────────────┘
-                       │ HTTP Fetch API
-                       │
-┌──────────────────────┴──────────────────────────────────────────┐
-│                      Serverless & Static                        │
-│                           (Vercel)                              │
-│                                                                 │
-│  • Static Landing Page (public/)                                │
-│  • Serverless APIs for Twitch Integration (api/)                │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph Client ["Chrome Extension (Client-Side)"]
+        style Client fill:#fff8f0,stroke:#1e293b,stroke-width:3px,color:#1e293b,font-weight:bold
+        SCRIPTS["scripts/ (11 modules)<br>• config.js  • state.js  • utils.js<br>• toast.js  • theme.js  • video-sync.js<br>• twitch.js  • socket.js  • sidebar.js<br>• views.js  • init.js"]
+        STYLES["styles/<br>• huddle.css"]
+        
+        style SCRIPTS fill:#ffffff,stroke:#1e293b,stroke-width:2px,color:#1e293b
+        style STYLES fill:#ffffff,stroke:#1e293b,stroke-width:2px,color:#1e293b
+    end
+
+    subgraph Sync ["Sync Server (Railway)"]
+        style Sync fill:#f0f4ff,stroke:#1e293b,stroke-width:3px,color:#1e293b,font-weight:bold
+        INDEX["server/index.js<br>• In-Memory Room Registry (Map)<br>• Real-Time Video Sync (WebSockets)<br>• Host Grace Reconnect Period (30s)"]
+        
+        style INDEX fill:#ffffff,stroke:#1e293b,stroke-width:2px,color:#1e293b
+    end
+
+    subgraph Serverless ["Serverless & Static (Vercel)"]
+        style Serverless fill:#fff5f5,stroke:#1e293b,stroke-width:3px,color:#1e293b,font-weight:bold
+        LANDING["public/room.html<br>(Static Landing Page)"]
+        APIS["api/ (Serverless Integration)<br>• api/twitch/oauth.js<br>• api/twitch/chat.js<br>• api/room/[code].js"]
+        
+        style LANDING fill:#ffffff,stroke:#1e293b,stroke-width:2px,color:#1e293b
+        style APIS fill:#ffffff,stroke:#1e293b,stroke-width:2px,color:#1e293b
+    end
+
+    Client <==>|Socket.IO WebSockets| Sync
+    LANDING <==>|Socket.IO WebSockets| Sync
+    APIS <==>|HTTP Fetch Proxy| Sync
 ```
 
 ---
