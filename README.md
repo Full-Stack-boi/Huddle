@@ -14,7 +14,7 @@ A **Chrome Extension** that lets you watch videos with friends in perfect real-t
 ---
 
 <img src="https://img.shields.io/badge/version-2.0.0-8B5CF6?style=flat-square" alt="Version" />
-<img src="https://img.shields.io/badge/license-ISC-06B6D4?style=flat-square" alt="License" />
+<img src="https://img.shields.io/badge/license-PolyForm_NC_1.0-06B6D4?style=flat-square" alt="License" />
 <img src="https://img.shields.io/badge/status-Active-10B981?style=flat-square" alt="Status" />
 
 </div>
@@ -307,7 +307,9 @@ When friends click this link, the extension **auto-joins the room** instantly wi
 
 ## 📝 License
 
-This project is licensed under the **ISC License**.
+This project is licensed under the **[PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0)**.
+
+You are free to view, use, modify, and share this software for **noncommercial purposes only**. Commercial use is not permitted without explicit permission from the author.
 
 ---
 
