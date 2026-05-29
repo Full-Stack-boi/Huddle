@@ -1,10 +1,10 @@
-<![CDATA[<div align="center">
+<div align="center">
 
 # 🎬 Huddle
 
 ### Watch Together. Sync Perfectly.
 
-A **Chrome Extension** that lets you watch videos with friends in perfect real-time sync — across YouTube, Netflix, Disney+, Prime Video, and Twitch Clips.
+A **Chrome Extension** that lets you watch videos with friends in perfect real-time sync — across YouTube, Netflix, Disney+ Hotstar, Prime Video, and Twitch Clips.
 
 [![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://github.com/Full-Stack-boi/Huddle)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-Realtime-010101?style=for-the-badge&logo=socket.io&logoColor=white)](https://socket.io/)
@@ -32,78 +32,85 @@ No more counting down *"3… 2… 1… play!"*
 ## ✨ Features
 
 ### 🔄 Real-Time Video Sync
-- **Event-driven architecture** — play, pause, and seek sync instantly via WebSocket events
-- **1-second heartbeat** — continuous drift correction keeps everyone within 0.5 seconds
-- **Host-controlled** — the Host's playback state is the source of truth
+- **Event-driven architecture** — play, pause, and seek sync instantly via WebSocket events.
+- **1-second heartbeat** — continuous drift correction keeps everyone within 0.5 seconds of the host.
+- **Host-controlled** — the Host's playback state is the absolute source of truth.
 
 ### 🌐 Multi-Platform Support
 | Platform | Status | Notes |
 |----------|--------|-------|
 | YouTube | ✅ Supported | Full thumbnail & metadata extraction |
 | Netflix | ✅ Supported | Works on `/watch` pages |
-| Disney+ / Hotstar | ✅ Supported | `disneyplus.com` & `hotstar.com` |
+| Disney+ Hotstar | ✅ Supported | `disneyplus.com` & `hotstar.com` |
 | Prime Video | ✅ Supported | Amazon Prime Video |
 | Twitch Clips | ✅ Supported | `clips.twitch.tv` |
 
-### 🎨 Dynamic Brand Theming
-The sidebar **automatically adapts** its color palette and logo to match whichever platform you're watching on:
-- **YouTube** → Soft Coral Red theme
-- **Netflix** → Crimson theme
-- **Disney+** → Royal Blue theme
-- **Prime Video** → Sky Blue theme
-- **Twitch** → Purple theme
+### 🎨 Dynamic Brand Theming & Logos
+The sidebar **automatically adapts** its color palette and SVG brand logos to match whichever platform you are currently watching:
+- **YouTube** → Soft Coral Red theme with native YouTube SVG logo.
+- **Netflix** → Soft Crimson theme with native Netflix SVG logo.
+- **Disney+ Hotstar** → Deep Royal Blue theme with native Star/Disney SVG logo.
+- **Prime Video** → Sky Prime Blue theme with Prime Video check-style SVG logo.
+- **Twitch** → Soft Twitch Purple theme with native Twitch SVG logo.
+- **Default/Other pages** → Pastel Lavender theme with custom Clapperboard SVG logo.
 
-When you join someone's room, your sidebar transitions to match **their** platform's branding!
+When you join someone's room, your sidebar transitions dynamically in real time to match **their** video platform's branding!
 
 ### 🟣 Twitch Streamer Integration
-- **OAuth Login** — connect your Twitch account securely
-- **Live Status** — see if you're currently live with viewer count
-- **Share to Chat** — send your Huddle room link directly to your Twitch chat so viewers can join your watch party
+- **OAuth Login** — connect your Twitch account securely via implicit grant flow.
+- **Live Status** — see if you're currently live with your real-time viewer count.
+- **Share to Chat** — send your Huddle room link directly to your Twitch chat so viewers can join your watch party in one click.
 
 ### 🏠 Room System
-- **Unique Room Codes** — auto-generated `HUD-XXXX` codes (easy to read and share)
-- **One-Click Copy** — click the room code to copy it to clipboard
-- **Auto-Join via Link** — share a URL with `#huddle_room=CODE` and friends join instantly
-- **Landing Page** — a beautiful web page where friends can preview the room before joining
+- **Unique Room Codes** — auto-generated `HUD-XXXX` codes (using clear, non-ambiguous characters).
+- **One-Click Copy** — click the room code to copy it directly to your clipboard.
+- **Auto-Join via Link** — share a URL with `#huddle_room=CODE` and friends join instantly.
+- **Landing Page** — a beautiful web page where friends can preview the room, see who's in it, and join with/without the extension.
 
 ### 👥 Viewers Experience
-- **Host Crown** 👑 — the host is highlighted at the top of the list
-- **Self Indicator** — your name is marked with `(You)` and a distinct style
-- **Expand/Collapse** — toggle the viewers list with a smooth animation
-- **Room Dissolution** — when the host closes the room, viewers are notified immediately
+- **Host Crown 👑** — the host is highlighted at the top of the list with a gold crown.
+- **Self Indicator** — your name is marked with `(You)` and distinct styling.
+- **Expand/Collapse** — toggle the viewers list with a smooth animation.
+- **Room Dissolution** — when the host closes the room, guests' sidebars automatically slide open to show a prompt.
 
 ### 🔁 Reliability
-- **Auto-Reconnect** — up to 10 reconnection attempts with exponential backoff
-- **Host Grace Period** — 30-second window for host to reconnect without losing the room
-- **Cross-Origin Names** — display names persist across all websites via `chrome.storage`
+- **Auto-Reconnect** — up to 10 reconnection attempts with exponential backoff.
+- **Host Grace Period** — 30-second window for hosts to reconnect without losing the room.
+- **Cross-Origin Names** — display names persist across all websites via `chrome.storage.local`.
 
 ---
 
 ## 🏗️ Architecture
 
+Huddle uses a clean, decoupled **modular layout** designed for ease of maintenance and zero build overhead:
+
 ```
-┌─────────────────────────────────────────────────┐
-│                Chrome Extension                  │
-│  ┌───────────┐  ┌──────────┐  ┌──────────────┐  │
-│  │content.js │  │ style.css│  │ manifest.json│  │
-│  │(1154 lines)│  │(920 lines)│  │  (MV3)      │  │
-│  └─────┬─────┘  └──────────┘  └──────────────┘  │
-│        │ Socket.IO                                │
-└────────┼─────────────────────────────────────────┘
-         │
-         ▼
-┌─────────────────────┐     ┌──────────────────────┐
-│   Sync Server       │     │   Twitch API Server  │
-│   (Railway)         │     │   (Vercel)           │
-│                     │     │                      │
-│  • Room Registry    │◄────│  • OAuth Handler     │
-│  • Video Sync       │     │  • Chat Proxy        │
-│  • Host Management  │     │  • Room Metadata API │
-│  • Viewer Tracking  │     │  • Landing Page      │
-│                     │     │                      │
-│  Node.js + Express  │     │  Serverless Functions│
-│  + Socket.IO        │     │  + Static HTML       │
-└─────────────────────┘     └──────────────────────┘
+                  ┌───────────────────────────────────────────────┐
+                  │               Chrome Extension                │
+                  │  ┌─────────────────────────┐  ┌────────────┐  │
+                  │  │ scripts/ (11 modules)   │  │ styles/    │  │
+                  │  │ config.js, state.js,    │  │ huddle.css │  │
+                  │  │ video-sync.js, views.js │  └────────────┘  │
+                  │  └───────────┬─────────────┘                  │
+                  └──────────────┼────────────────────────────────┘
+                                 │ Socket.IO
+                                 ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                          Sync Server                            │
+│                        (server/index.js)                        │
+│                                                                 │
+│  • In-Memory Room Registry     • Host & Disconnect Grace Logic  │
+│  • Real-Time Video Sync        • HTTP REST Room Metadata API    │
+└──────────────────────▲──────────────────────────────────────────┘
+                       │ HTTP Fetch API
+                       │
+┌──────────────────────┴──────────────────────────────────────────┐
+│                      Serverless & Static                        │
+│                           (Vercel)                              │
+│                                                                 │
+│  • Static Landing Page (public/)                                │
+│  • Serverless APIs for Twitch Integration (api/)                │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -112,29 +119,42 @@ When you join someone's room, your sidebar transitions to match **their** platfo
 
 ```
 Huddle/
-├── client/                  # Chrome Extension
-│   ├── manifest.json        # Extension config (Manifest V3)
-│   ├── content.js           # Main extension logic
-│   ├── style.css            # UI styles & design system
-│   ├── background.js        # Service worker
-│   └── socketioclient.js    # Socket.IO client bundle
+├── extension/                       # Chrome Extension Assets
+│   ├── manifest.json                # Extension config (Manifest V3)
+│   ├── background.js                # Service worker
+│   ├── vendor/
+│   │   └── socket.io.min.js         # Socket.IO client library
+│   ├── scripts/                     # Modular content scripts (Global Scope)
+│   │   ├── config.js                # Main HUDDLE_CONFIG
+│   │   ├── state.js                 # Global let state variables
+│   │   ├── utils.js                 # Display name & metadata utilities
+│   │   ├── toast.js                 # Toast notification DOM helpers
+│   │   ├── theme.js                 # Dynamic brand pastel themes & SVGs
+│   │   ├── video-sync.js            # Video detection, listeners, heartbeat
+│   │   ├── twitch.js                # Twitch OAuth & chat helpers
+│   │   ├── socket.js                # Socket.io listeners & setup
+│   │   ├── sidebar.js               # Sidebar builder, toggle & pager
+│   │   ├── views.js                 # Component renderers & handlers
+│   │   └── init.js                  # Entry-point initialization
+│   └── styles/
+│       └── huddle.css               # Organized & deduplicated CSS
 │
-├── server.js                # Sync Server (Railway)
-├── package.json             # Server dependencies
+├── server/                          # Real-Time Sync Server (Railway)
+│   └── index.js                     # Server entry point
 │
-├── api/                     # Vercel Serverless Functions
+├── api/                             # Vercel Serverless Functions
 │   ├── twitch/
-│   │   ├── oauth.js         # Twitch OAuth handler
-│   │   └── chat.js          # Twitch chat proxy
+│   │   ├── oauth.js                 # Twitch OAuth implicit handler
+│   │   └── chat.js                  # Twitch chat relay proxy
 │   └── room/
-│       └── [code].js        # Room metadata API
+│       └── [code].js                # Room metadata JSON proxy
 │
-├── public/                  # Vercel Static Assets
-│   └── room.html            # Landing Page
+├── public/                          # Vercel Static Files
+│   └── room.html                    # Real-time room Landing Page
 │
-├── vercel.json              # Vercel routing config
-└── docs/
-    └── adr/                 # Architecture Decision Records
+├── vercel.json                      # Vercel routing & caching config
+├── package.json                     # Server metadata & launch scripts
+└── README.md                        # Documentation
 ```
 
 ---
@@ -144,8 +164,8 @@ Huddle/
 ### Prerequisites
 
 - **Node.js** ≥ 16.0.0
-- A **Chromium-based browser** (Chrome, Edge, Brave, etc.)
-- *(Optional)* A [Twitch Developer App](https://dev.twitch.tv/console) for streamer features
+- A **Chromium-based browser** (Chrome, Edge, Brave, Opera, etc.)
+- *(Optional)* A [Twitch Developer Application](https://dev.twitch.tv/console) for streamer integrations
 
 ### 1. Clone & Install
 
@@ -155,34 +175,39 @@ cd Huddle
 npm install
 ```
 
-### 2. Start the Sync Server
+### 2. Run the Sync Server
 
 ```bash
-# Development (with auto-reload)
+# Development (with nodemon auto-reload)
 npm run dev
 
 # Production
 npm start
 ```
 
-The server runs on port `4000` by default (or `$PORT` environment variable).
+The server runs on port `4000` by default (or the `$PORT` environment variable).
 
-### 3. Load the Extension
+### 3. Install the Extension in Chrome
 
-1. Open `chrome://extensions/` in your browser
-2. Enable **Developer mode** (toggle in top-right)
-3. Click **Load unpacked** → select the `client/` folder
-4. You'll see the Huddle icon in your toolbar! 🎬
+1. Open your browser and navigate to **`chrome://extensions/`**
+2. Toggle **"Developer mode"** in the top-right corner.
+3. Click the **"Load unpacked"** button in the top-left.
+4. Select the **`Huddle/extension`** folder.
+5. The Huddle extension is now active! Open any supported video (e.g. YouTube) and look for the 🎬 floating button.
 
-### 4. Configure (Optional)
+### 4. Configuration (Optional)
 
-Edit the config in `client/content.js`:
+Update the configuration in [extension/scripts/config.js](file:///C:/Project/Huddle/extension/scripts/config.js):
 
 ```javascript
 const HUDDLE_CONFIG = {
-  syncServerUrl: "http://localhost:4000",       // Your server URL
-  twitchClientId: "YOUR_TWITCH_CLIENT_ID",      // For Twitch features
-  twitchRedirectUri: "YOUR_VERCEL_OAUTH_URL",   // For Twitch OAuth
+  syncServerUrl: "http://localhost:4000",       // Your Railway or local server URL
+  twitchClientId: "YOUR_TWITCH_CLIENT_ID",      // Your Twitch App Client ID
+  twitchRedirectUri: "YOUR_VERCEL_OAUTH_URL",   // e.g. https://domain.app/api/twitch/oauth
+  heartbeatInterval: 1000,
+  seekThreshold: 0.5,
+  reconnectGracePeriod: 30000,
+  toastDuration: 4000,
 };
 ```
 
@@ -191,42 +216,40 @@ const HUDDLE_CONFIG = {
 ## 🎮 How to Use
 
 ### As a Host
-1. Open a video on any supported platform
-2. Click the 🎬 floating button to open the sidebar
-3. Enter your display name
-4. Click **"🎬 Start New Room"**
-5. Share the room code (e.g., `HUD-A1B2`) with friends!
+1. Navigate to an actual video watch page on a supported platform.
+2. Click the 🎬 floating button to slide out the sidebar.
+3. Enter your display name.
+4. Click **"🎬 Start New Room"**.
+5. Copy the generated room code (e.g., `HUD-A1B2`) and share it with your friends!
 
 ### As a Viewer
-1. Get the room code from the host
-2. Click the 🎬 button on any page
-3. Enter your name and the room code
-4. Click **"🚪 Join Room"** → you'll be synced automatically!
+1. Get the room code from the host.
+2. Click the Huddle sidebar button on any page.
+3. Enter your name and the room code.
+4. Click **"🚪 Join Room"** — your playback state will instantly sync with the host!
 
-### Via Share Link
-Hosts can share a direct link like:
+### Auto-Join via Link
+Hosts can share a direct join link like:
 ```
-https://youtube.com/watch?v=VIDEO_ID#huddle_room=HUD-A1B2&name=Friend
+https://www.youtube.com/watch?v=VIDEO_ID#huddle_room=HUD-A1B2&name=Friend
 ```
-Friends who click this link **auto-join the room** instantly!
+When friends click this link, the extension **auto-joins the room** instantly without any typing!
 
 ---
 
-## 🌐 Deployment
+## 🌐 Production Deployment
 
-### Sync Server → Railway
+### 1. Sync Server (Railway)
+- Connect this GitHub repository to [Railway](https://railway.app).
+- Railway automatically detects the `package.json` and runs `npm start` (pointing to `server/index.js`).
+- Port binds automatically to Railway's dynamic `$PORT`.
 
-1. Connect the GitHub repo to [Railway](https://railway.app)
-2. Railway auto-detects `package.json` and runs `npm start`
-3. The `PORT` env variable is set automatically
-
-### Twitch API + Landing Page → Vercel
-
-1. Connect the same repo to [Vercel](https://vercel.com)
-2. Vercel auto-detects `vercel.json` for routing
-3. Set environment variables:
-   - `TWITCH_CLIENT_ID` — Your Twitch app Client ID
-   - `SYNC_SERVER_URL` — Your Railway server URL
+### 2. APIs & Landing Page (Vercel)
+- Connect the same repository to [Vercel](https://vercel.com).
+- Vercel automatically detects `vercel.json` and spins up the serverless APIs and the landing page.
+- Add environment variables in Vercel Console:
+  - `TWITCH_CLIENT_ID` — Your Twitch app client ID
+  - `SYNC_SERVER_URL` — Your active Railway sync server URL (e.g. `https://huddle-sync.up.railway.app`)
 
 ---
 
@@ -234,36 +257,35 @@ Friends who click this link **auto-join the room** instantly!
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
-| Extension | Vanilla JS, CSS, Manifest V3 | Client-side UI & video sync |
-| Sync Server | Node.js, Express, Socket.IO | Real-time room management |
-| API Server | Vercel Serverless Functions | Twitch OAuth & chat proxy |
-| Landing Page | Static HTML/CSS/JS | Room preview & auto-join |
-| Communication | WebSocket (Socket.IO) | Bi-directional real-time events |
-| Storage | `chrome.storage.local` | Cross-origin persistent data |
+| **Extension UI** | Vanilla JS, CSS, Google Fonts | Responsive cartoon layout & custom SVGs |
+| **Extension Core** | Chrome Storage API, Manifest V3 | Cross-origin displays & background worker |
+| **Sync Server** | Node.js, Express, Socket.IO | Real-time WebSocket room coordination |
+| **API Server** | Vercel Serverless Functions | Secure Twitch OAuth, chat relay, & metadata proxy |
+| **Landing Page** | Static HTML, CSS, JS | Real-time playback status & extension auto-check |
 
 ---
 
-## 📡 Socket Events
+## 📡 Socket API Events
 
-| Event | Direction | Description |
-|-------|-----------|-------------|
-| `createRoom` | Client → Server | Host creates a new room |
-| `joinRoom` | Client → Server | Viewer joins with room code |
-| `leaveRoom` | Client → Server | Viewer explicitly leaves |
-| `closeRoom` | Client → Server | Host dissolves the room |
-| `videoSync` | Client ↔ Server | Play/pause/seek/heartbeat sync |
-| `reclaimRoom` | Client → Server | Host reclaims after disconnect |
-| `roomCreated` | Server → Client | Room created confirmation |
-| `joinSuccess` | Server → Client | Join confirmed with room data |
-| `viewerJoined` | Server → Clients | New viewer notification |
-| `viewerLeft` | Server → Clients | Viewer departure notification |
-| `roomDissolved` | Server → Clients | Room closed by host |
+| Event | Direction | Payload | Description |
+|-------|-----------|---------|-------------|
+| `createRoom` | Client → Server | `{ hostName, videoUrl, ... }` | Creates a room and assigns host status |
+| `joinRoom` | Client → Server | `{ roomCode, name }` | Joins a room as a viewer |
+| `leaveRoom` | Client → Server | `{ roomCode, name }` | Explicitly leaves a room (viewers) |
+| `closeRoom` | Client → Server | `{ roomCode }` | Host explicitly dissolves the room |
+| `videoSync` | Client ↔ Server | `{ hostTime, isHostPaused, type }` | Synchronizes play, pause, seek, and heartbeats |
+| `reclaimRoom` | Client → Server | `{ roomCode, hostName }` | Reconnects host after a disconnect |
+| `roomCreated` | Server → Client | `{ roomCode }` | Acknowledges room creation |
+| `joinSuccess` | Server → Client | `{ hostName, videoUrl, viewers, ... }` | Acknowledges successful room join |
+| `viewerJoined` | Server → Clients | `{ name, viewerCount }` | Notifies room of a new viewer arrival |
+| `viewerLeft` | Server → Clients | `{ name, viewerCount }` | Notifies room of a viewer departure |
+| `roomDissolved` | Server → Clients | — | Notifies room that the host has closed it |
 
 ---
 
 ## 🎓 Academic Project
 
-> **Note:** This project was developed as a **University Project** to demonstrate skills in full-stack development, real-time bidirectional communication, browser extension architecture, and modern web design.
+> **Note:** This project was developed as a **University Project** to demonstrate skills in full-stack development, real-time bidirectional communication, browser extension architecture, and modern responsive web design.
 
 ---
 
@@ -280,4 +302,3 @@ This project is licensed under the **ISC License**.
 *Because watching alone is overrated.*
 
 </div>
-]]>
