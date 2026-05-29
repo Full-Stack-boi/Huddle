@@ -10,13 +10,26 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["socketioclient.js", "content.js"],
-      "css": ["style.css"]
+      "js": [
+        "vendor/socket.io.min.js",
+        "scripts/config.js",
+        "scripts/state.js",
+        "scripts/utils.js",
+        "scripts/toast.js",
+        "scripts/theme.js",
+        "scripts/video-sync.js",
+        "scripts/twitch.js",
+        "scripts/socket.js",
+        "scripts/sidebar.js",
+        "scripts/views.js",
+        "scripts/init.js"
+      ],
+      "css": ["styles/huddle.css"]
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["style.css"],
+      "resources": ["styles/huddle.css"],
       "matches": [
         "https://www.youtube.com/*",
         "https://www.netflix.com/*",
