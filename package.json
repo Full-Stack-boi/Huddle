@@ -2,7 +2,7 @@
   "name": "huddle-sync-server",
   "version": "1.0.0",
   "description": "Huddle Sync Server – real-time video synchronization via Socket.IO",
-  "main": "server.js",
+  "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
     "dev": "nodemon server/index.js",
