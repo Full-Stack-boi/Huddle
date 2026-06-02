@@ -77,6 +77,28 @@ function buildSidebar() {
     openBtn.classList.toggle("sidebar-open");
   });
 
+  // Handle fullscreen changes to hide/show the floating button and sidebar
+  const handleFullscreenChange = () => {
+    const isFullscreen = !!(
+      document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.mozFullScreenElement ||
+      document.msFullscreenElement
+    );
+    if (isFullscreen) {
+      openBtn.classList.add("huddle-fullscreen-hide");
+      sidebar.classList.add("huddle-fullscreen-hide");
+    } else {
+      openBtn.classList.remove("huddle-fullscreen-hide");
+      sidebar.classList.remove("huddle-fullscreen-hide");
+    }
+  };
+
+  document.addEventListener("fullscreenchange", handleFullscreenChange);
+  document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+  document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+  document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+
   // Extension Icon Click Listener (from background.js)
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "HUDDLE_TOGGLE_SIDEBAR") {
