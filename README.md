@@ -13,7 +13,7 @@ A **Chrome Extension** that lets you watch videos with friends in perfect real-t
 
 ---
 
-<img src="https://img.shields.io/badge/version-2.0.0-8B5CF6?style=flat-square" alt="Version" />
+<img src="https://img.shields.io/badge/version-1.1.2-8B5CF6?style=flat-square" alt="Version" />
 <img src="https://img.shields.io/badge/license-PolyForm_NC_1.0-06B6D4?style=flat-square" alt="License" />
 <img src="https://img.shields.io/badge/status-Active-10B981?style=flat-square" alt="Status" />
 
@@ -25,7 +25,7 @@ A **Chrome Extension** that lets you watch videos with friends in perfect real-t
 
 ---
 
-## 🎯 What is Huddle?
+## What is Huddle?
 
 Huddle turns any video streaming session into a **shared experience**. Create a room, share the code, and everyone's video syncs automatically — play, pause, and seek in perfect harmony.
 
@@ -33,15 +33,15 @@ No more counting down _"3… 2… 1… play!"_
 
 ---
 
-## ✨ Features
+## Features
 
-### 🔄 Real-Time Video Sync
+### Real-Time Video Sync
 
 - **Event-driven architecture** — play, pause, and seek sync instantly via WebSocket events.
 - **1-second heartbeat** — continuous drift correction keeps everyone within 0.5 seconds of the host.
 - **Host-controlled** — the Host's playback state is the absolute source of truth.
 
-### 🌐 Multi-Platform Support
+### Multi-Platform Support
 
 | Platform        | Status       | Notes                                |
 | --------------- | ------------ | ------------------------------------ |
@@ -51,7 +51,7 @@ No more counting down _"3… 2… 1… play!"_
 | Prime Video     | ✅ Supported | Amazon Prime Video                   |
 | Twitch Clips    | ✅ Supported | `clips.twitch.tv`                    |
 
-### 🎨 Dynamic Brand Theming & Logos
+### Dynamic Brand Theming & Logos
 
 The sidebar **automatically adapts** its color palette and SVG brand logos to match whichever platform you are currently watching:
 
@@ -64,27 +64,27 @@ The sidebar **automatically adapts** its color palette and SVG brand logos to ma
 
 When you join someone's room, your sidebar transitions dynamically in real time to match **their** video platform's branding!
 
-### 🟣 Twitch Streamer Integration
+### Twitch Streamer Integration
 
 - **OAuth Login** — connect your Twitch account securely via implicit grant flow.
 - **Live Status** — see if you're currently live with your real-time viewer count.
 - **Share to Chat** — send your Huddle room link directly to your Twitch chat so viewers can join your watch party in one click.
 
-### 🏠 Room System
+### Room System
 
 - **Unique Room Codes** — auto-generated `HUD-XXXX` codes (using clear, non-ambiguous characters).
 - **One-Click Copy** — click the room code to copy it directly to your clipboard.
 - **Auto-Join via Link** — share a URL with `#huddle_room=CODE` and friends join instantly.
 - **Landing Page** — a beautiful web page where friends can preview the room, see who's in it, and join with/without the extension.
 
-### 👥 Viewers Experience
+### Viewers Experience
 
 - **Host Crown 👑** — the host is highlighted at the top of the list with a gold crown.
 - **Self Indicator** — your name is marked with `(You)` and distinct styling.
 - **Expand/Collapse** — toggle the viewers list with a smooth animation.
 - **Room Dissolution** — when the host closes the room, guests' sidebars automatically slide open to show a prompt.
 
-### 🔁 Reliability
+### Reliability
 
 - **Auto-Reconnect** — up to 10 reconnection attempts with exponential backoff.
 - **Host Grace Period** — 30-second window for hosts to reconnect without losing the room.
@@ -92,7 +92,7 @@ When you join someone's room, your sidebar transitions dynamically in real time 
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 Huddle uses a clean, decoupled **modular layout** designed for ease of maintenance and zero build overhead:
 
@@ -130,7 +130,7 @@ flowchart TD
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 Huddle/
@@ -174,7 +174,7 @@ Huddle/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -228,7 +228,7 @@ const HUDDLE_CONFIG = {
 
 ---
 
-## 🎮 How to Use
+## How to Use
 
 ### As a Host
 
@@ -257,7 +257,7 @@ When friends click this link, the extension **auto-joins the room** instantly wi
 
 ---
 
-## 🌐 Production Deployment
+## Production Deployment
 
 ### 1. Sync Server (Railway)
 
@@ -275,7 +275,7 @@ When friends click this link, the extension **auto-joins the room** instantly wi
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer              | Technology                      | Purpose                                           |
 | ------------------ | ------------------------------- | ------------------------------------------------- |
@@ -287,7 +287,7 @@ When friends click this link, the extension **auto-joins the room** instantly wi
 
 ---
 
-## 📡 Socket API Events
+## Socket API Events
 
 | Event           | Direction        | Payload                                | Description                                    |
 | --------------- | ---------------- | -------------------------------------- | ---------------------------------------------- |
@@ -305,7 +305,7 @@ When friends click this link, the extension **auto-joins the room** instantly wi
 
 ---
 
-## 📝 License
+## License
 
 This project is licensed under the **[PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0)**.
 

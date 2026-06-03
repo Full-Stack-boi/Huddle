@@ -12,7 +12,7 @@
     "node": ">=16.0.0"
   },
   "keywords": [],
-  "author": "",
+  "author": "Nattawut Buphoo",
   "license": "PolyForm-Noncommercial-1.0.0",
   "dependencies": {
     "express": "^4.17.1",

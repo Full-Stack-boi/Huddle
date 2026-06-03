@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Huddle",
   "description": "Watch videos together in real-time sync. Create rooms, invite friends, or share with your Twitch audience.",
-  "version": "2.0.0",
+  "version": "1.1.2",
   "action": {},
   "background": {
     "service_worker": "background.js"
