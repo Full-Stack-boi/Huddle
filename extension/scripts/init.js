@@ -57,9 +57,43 @@ function init() {
   injectExtensionMarker();
   restoreTwitchToken();
 
+  // Clear legacy global room keys to prevent conflicts with tab-isolated storage
+  try {
+    if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.remove(["huddle_room_code", "huddle_is_host"]);
+    }
+  } catch (err) {
+    console.warn("[Huddle] Failed to clear legacy storage keys on init:", err);
+  }
+
   loadDisplayName(() => {
-    buildSidebar();
-    checkAutoJoin();
+    restoreRoomSession(() => {
+      buildSidebar();
+      checkAutoJoin();
+
+      // Listen for client-side SPA routing hash changes
+      window.addEventListener("hashchange", checkAutoJoin);
+
+      // Reconnect/Reclaim room automatically if session is restored
+      if (currentRoomCode) {
+        const tryReclaimOrJoin = () => {
+          if (mySocketId) {
+            const savedName = displayName || "Viewer";
+            displayName = savedName;
+            if (isHost) {
+              console.log("[Huddle] Restored Host session. Reclaiming room:", currentRoomCode);
+              socket.emit("reclaimRoom", { roomCode: currentRoomCode, hostName: displayName });
+            } else {
+              console.log("[Huddle] Restored Guest session. Joining room:", currentRoomCode);
+              socket.emit("joinRoom", { roomCode: currentRoomCode, name: displayName });
+            }
+          } else {
+            setTimeout(tryReclaimOrJoin, 200);
+          }
+        };
+        tryReclaimOrJoin();
+      }
+    });
   });
 }
 

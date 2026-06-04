@@ -39,8 +39,7 @@ socket.on("reconnect_failed", () => {
 
 /* ---------- Socket: Room Events ---------- */
 socket.on("roomCreated", ({ roomCode }) => {
-  currentRoomCode = roomCode;
-  isHost = true;
+  saveRoomSession(roomCode, true);
   currentHostName = displayName; // Host is the current host
   showPage("room");
   renderRoomView();
@@ -53,7 +52,7 @@ socket.on("roomCreated", ({ roomCode }) => {
 socket.on(
   "joinSuccess",
   ({ roomCode, hostName, videoUrl, videoTitle, viewers, source }) => {
-    currentRoomCode = roomCode;
+    saveRoomSession(roomCode, false);
     currentHostVideoUrl = videoUrl;
     currentHostName = hostName; // Store the Host's display name
     viewersInRoom = viewers || [];
@@ -84,8 +83,7 @@ socket.on("viewerLeft", ({ name, viewerCount }) => {
 });
 
 socket.on("roomDissolved", () => {
-  currentRoomCode = null;
-  isHost = false;
+  clearRoomSession();
   currentHostName = "";
   viewersInRoom = [];
   stopVideoSync();

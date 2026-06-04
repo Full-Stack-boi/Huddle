@@ -357,8 +357,12 @@ function renderTwitchView() {
       twitchUserInfo = null;
       twitchLiveStatus = null;
       isConnectedToTwitch = false;
-      if (typeof chrome !== "undefined" && chrome.storage) {
-        chrome.storage.local.remove("huddle_twitch_token");
+      try {
+        if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+          chrome.storage.local.remove("huddle_twitch_token");
+        }
+      } catch (err) {
+        handleInvalidatedContext(err);
       }
       renderTwitchView();
       showToast("Twitch disconnected", "info");
@@ -444,8 +448,7 @@ function handleLeaveRoom() {
     socket.emit("leaveRoom", { roomCode: currentRoomCode, name: displayName });
   }
 
-  currentRoomCode = null;
-  isHost = false;
+  clearRoomSession();
   viewersInRoom = [];
   stopVideoSync();
   showPage("main");

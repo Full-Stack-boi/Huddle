@@ -58,7 +58,80 @@ function loadDisplayName(callback) {
 function saveDisplayName(name) {
   displayName = name;
   localStorage.setItem("huddle_display_name", name);
-  if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-    chrome.storage.local.set({ huddle_display_name: name });
+  try {
+    if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.set({ huddle_display_name: name });
+    }
+  } catch (err) {
+    handleInvalidatedContext(err);
   }
+}
+
+
+/* ---------- Room Session State Helpers ---------- */
+function saveRoomSession(roomCode, hostStatus) {
+  currentRoomCode = roomCode;
+  isHost = hostStatus;
+  try {
+    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
+      chrome.runtime.sendMessage({
+        type: "HUDDLE_SET_SESSION",
+        roomCode: roomCode,
+        isHost: hostStatus
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.warn("[Huddle] Failed to save session to background:", chrome.runtime.lastError.message);
+        }
+      });
+    }
+  } catch (err) {
+    handleInvalidatedContext(err);
+  }
+}
+
+function clearRoomSession() {
+  currentRoomCode = null;
+  isHost = false;
+  try {
+    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
+      chrome.runtime.sendMessage({ type: "HUDDLE_CLEAR_SESSION" }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.warn("[Huddle] Failed to clear session from background:", chrome.runtime.lastError.message);
+        }
+      });
+    }
+  } catch (err) {
+    handleInvalidatedContext(err);
+  }
+}
+
+function restoreRoomSession(callback) {
+  try {
+    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
+      chrome.runtime.sendMessage({ type: "HUDDLE_GET_SESSION" }, (result) => {
+        if (chrome.runtime.lastError) {
+          console.warn("[Huddle] Failed to get session from background:", chrome.runtime.lastError.message);
+          if (callback) callback();
+          return;
+        }
+        if (result && result.roomCode) {
+          currentRoomCode = result.roomCode;
+          isHost = !!result.isHost;
+          console.log("[Huddle] Restored tab session:", result);
+        }
+        if (callback) callback();
+      });
+    } else {
+      if (callback) callback();
+    }
+  } catch (err) {
+    handleInvalidatedContext(err);
+    if (callback) callback();
+  }
+}
+
+/* ---------- Graceful Invalidated Context Handler ---------- */
+function handleInvalidatedContext(err) {
+  console.warn("[Huddle] Extension context invalidated (Extension was updated/reloaded).", err);
+  showToast("⚠️ Extension updated! Please refresh this page to continue.", "error");
 }
