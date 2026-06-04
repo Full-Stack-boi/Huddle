@@ -135,3 +135,11 @@ function handleInvalidatedContext(err) {
   console.warn("[Huddle] Extension context invalidated (Extension was updated/reloaded).", err);
   showToast("⚠️ Extension updated! Please refresh this page to continue.", "error");
 }
+
+
+/* ---------- Check if YouTube Ad is Playing ---------- */
+function isAdPlaying() {
+  const ytAdShowing = document.querySelector(".ad-showing, .ad-interrupting");
+  const ytAdOverlay = document.querySelector(".ytp-ad-player-overlay, .ad-cta-wrapper, .ytp-ad-text");
+  return !!(ytAdShowing || ytAdOverlay);
+}

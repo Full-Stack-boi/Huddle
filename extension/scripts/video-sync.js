@@ -39,6 +39,9 @@ function attachVideoListeners() {
 function emitVideoSync(type) {
   if (!isHost || !videoPlayer || !currentRoomCode) return;
 
+  // Do not emit sync events if Host is currently watching an ad
+  if (isAdPlaying()) return;
+
   const state = {
     hostTime: videoPlayer.currentTime,
     isHostPaused: videoPlayer.paused,
@@ -51,6 +54,12 @@ function emitVideoSync(type) {
 
 function startVideoSync() {
   detectVideoPlayer();
+
+  // Clear any existing heartbeat timer first to prevent duplicate loops
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
 
   // Heartbeat for drift correction (host only)
   if (isHost) {

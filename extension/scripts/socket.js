@@ -102,6 +102,9 @@ socket.on("hostReconnected", () => {
 socket.on("videoSync", ({ hostTime, isHostPaused, type }) => {
   if (isHost || !videoPlayer) return;
 
+  // Skip synchronization if Joiner is currently watching an ad
+  if (isAdPlaying()) return;
+
   // Sync play/pause state
   if (isHostPaused && !videoPlayer.paused) {
     videoPlayer.pause();
