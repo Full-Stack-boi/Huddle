@@ -18,3 +18,5 @@ let twitchLiveStatus = null;
 let currentPage = "main"; // 'main' | 'twitch' | 'room'
 let heartbeatTimer = null;
 let lastSyncedState = { time: 0, paused: true };
+let lastSyncedVideoUrl = "";
+let pendingInitialSync = null;

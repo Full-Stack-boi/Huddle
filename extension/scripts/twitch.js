@@ -21,7 +21,13 @@ function startTwitchOAuth() {
   window.addEventListener("message", function handler(event) {
     if (event.data && event.data.type === "HUDDLE_TWITCH_TOKEN") {
       twitchAccessToken = event.data.accessToken;
-      chrome.storage.local.set({ huddle_twitch_token: twitchAccessToken });
+      try {
+        if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+          chrome.storage.local.set({ huddle_twitch_token: twitchAccessToken });
+        }
+      } catch (err) {
+        handleInvalidatedContext(err);
+      }
       fetchTwitchUserInfo();
       window.removeEventListener("message", handler);
       if (popup && !popup.closed) popup.close();
@@ -42,7 +48,13 @@ async function fetchTwitchUserInfo() {
 
     if (!res.ok) {
       twitchAccessToken = null;
-      chrome.storage.local.remove("huddle_twitch_token");
+      try {
+        if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+          chrome.storage.local.remove("huddle_twitch_token");
+        }
+      } catch (err) {
+        handleInvalidatedContext(err);
+      }
       showToast("Twitch token expired. Please reconnect.", "error");
       renderTwitchView();
       return;
@@ -130,12 +142,16 @@ async function shareToTwitchChat() {
 
 /* ---------- Restore Twitch Token on Load ---------- */
 function restoreTwitchToken() {
-  if (typeof chrome !== "undefined" && chrome.storage) {
-    chrome.storage.local.get("huddle_twitch_token", (result) => {
-      if (result.huddle_twitch_token) {
-        twitchAccessToken = result.huddle_twitch_token;
-        fetchTwitchUserInfo();
-      }
-    });
+  try {
+    if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.get("huddle_twitch_token", (result) => {
+        if (result.huddle_twitch_token) {
+          twitchAccessToken = result.huddle_twitch_token;
+          fetchTwitchUserInfo();
+        }
+      });
+    }
+  } catch (err) {
+    handleInvalidatedContext(err);
   }
 }

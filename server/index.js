@@ -198,6 +198,14 @@ io.on("connection", function (socket) {
 
     var viewerName = data.name || "Viewer";
 
+    // Deduplicate viewer name to prevent collisions (especially during local testing)
+    var originalName = viewerName;
+    var count = 2;
+    while (viewerName === room.hostName || room.viewers.has(viewerName)) {
+      viewerName = originalName + " (" + count + ")";
+      count++;
+    }
+
     // Add viewer to the room
     room.viewers.add(viewerName);
     socket.join(code);
@@ -218,6 +226,7 @@ io.on("connection", function (socket) {
     // Acknowledge the viewer
     socket.emit("joinSuccess", {
       roomCode: code,
+      assignedName: viewerName,
       hostName: room.hostName,
       videoUrl: room.videoUrl,
       videoTitle: room.videoTitle,
@@ -375,7 +384,10 @@ io.on("connection", function (socket) {
       socket.id,
     );
 
-    socket.emit("roomCreated", { roomCode: code });
+    socket.emit("roomCreated", {
+      roomCode: code,
+      viewers: Array.from(room.viewers),
+    });
 
     // Notify viewers the host is back
     io.to(code).emit("hostReconnected", { hostName: room.hostName });
