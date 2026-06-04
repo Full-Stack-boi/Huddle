@@ -38,9 +38,12 @@ socket.on("reconnect_failed", () => {
 });
 
 /* ---------- Socket: Room Events ---------- */
-socket.on("roomCreated", ({ roomCode }) => {
+socket.on("roomCreated", ({ roomCode, viewers }) => {
   saveRoomSession(roomCode, true);
   currentHostName = displayName; // Host is the current host
+  if (viewers) {
+    viewersInRoom = viewers; // Restore viewers list upon reclaiming room
+  } // Host is the current host
   showPage("room");
   renderRoomView();
   startVideoSync();
@@ -51,8 +54,11 @@ socket.on("roomCreated", ({ roomCode }) => {
 
 socket.on(
   "joinSuccess",
-  ({ roomCode, hostName, videoUrl, videoTitle, viewers, source }) => {
+  ({ roomCode, assignedName, hostName, videoUrl, videoTitle, viewers, source }) => {
     saveRoomSession(roomCode, false);
+    if (assignedName) {
+      displayName = assignedName; // Save de-duplicated name assigned by server
+    }
     currentHostVideoUrl = videoUrl;
     currentHostName = hostName; // Store the Host's display name
     viewersInRoom = viewers || [];
