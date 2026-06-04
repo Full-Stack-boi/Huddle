@@ -35,21 +35,27 @@ function getVideoMetadata() {
 
 /* ---------- Persistent Cross-Origin Display Name Helpers ---------- */
 function loadDisplayName(callback) {
-  if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-    chrome.storage.local.get("huddle_display_name", (result) => {
-      if (result.huddle_display_name) {
-        displayName = result.huddle_display_name;
-        localStorage.setItem("huddle_display_name", displayName);
-      } else {
-        const localName = localStorage.getItem("huddle_display_name");
-        if (localName) {
-          displayName = localName;
-          chrome.storage.local.set({ huddle_display_name: displayName });
+  try {
+    if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.get("huddle_display_name", (result) => {
+        if (result.huddle_display_name) {
+          displayName = result.huddle_display_name;
+          localStorage.setItem("huddle_display_name", displayName);
+        } else {
+          const localName = localStorage.getItem("huddle_display_name");
+          if (localName) {
+            displayName = localName;
+            chrome.storage.local.set({ huddle_display_name: displayName });
+          }
         }
-      }
+        if (callback) callback();
+      });
+    } else {
+      displayName = localStorage.getItem("huddle_display_name") || "";
       if (callback) callback();
-    });
-  } else {
+    }
+  } catch (err) {
+    handleInvalidatedContext(err);
     displayName = localStorage.getItem("huddle_display_name") || "";
     if (callback) callback();
   }
@@ -66,7 +72,6 @@ function saveDisplayName(name) {
     handleInvalidatedContext(err);
   }
 }
-
 
 /* ---------- Room Session State Helpers ---------- */
 function saveRoomSession(roomCode, hostStatus) {
@@ -133,9 +138,32 @@ function restoreRoomSession(callback) {
 /* ---------- Graceful Invalidated Context Handler ---------- */
 function handleInvalidatedContext(err) {
   console.warn("[Huddle] Extension context invalidated (Extension was updated/reloaded).", err);
+  // Show a non-blocking toast warning that tells the user to refresh their page
   showToast("⚠️ Extension updated! Please refresh this page to continue.", "error");
 }
 
+/* ---------- Compare URLs for Same Video ---------- */
+function areUrlsSameVideo(url1, url2) {
+  if (!url1 || !url2) return false;
+
+  const clean1 = url1.split("#")[0];
+  const clean2 = url2.split("#")[0];
+
+  if (clean1 === clean2) return true;
+
+  // Check YouTube video ID equality to prevent redundant redirects on query parameter differences
+  if (clean1.includes("youtube.com/watch") && clean2.includes("youtube.com/watch")) {
+    try {
+      const v1 = new URL(clean1).searchParams.get("v");
+      const v2 = new URL(clean2).searchParams.get("v");
+      return v1 && v2 && v1 === v2;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  return false;
+}
 
 /* ---------- Check if YouTube Ad is Playing ---------- */
 function isAdPlaying() {

@@ -15,6 +15,19 @@ function detectVideoPlayer() {
     videoPlayer.removeAttribute("autoplay");
     attachVideoListeners();
     console.log("[Huddle] Video player detected");
+
+    // Apply pending initial sync if present (for joiners joining/restoring)
+    if (!isHost && pendingInitialSync) {
+      const { hostTime, isHostPaused } = pendingInitialSync;
+      if (isHostPaused) {
+        videoPlayer.pause();
+      }
+      videoPlayer.currentTime = hostTime;
+      if (!isHostPaused) {
+        videoPlayer.play().catch(() => {});
+      }
+      pendingInitialSync = null; // Clear it
+    }
   } else {
     adTimer = setTimeout(detectVideoPlayer, 500);
   }
@@ -22,6 +35,10 @@ function detectVideoPlayer() {
 
 function attachVideoListeners() {
   if (!videoPlayer || !isHost) return;
+
+  // Prevent duplicate listeners on the reused video element
+  if (videoPlayer.huddleListenersAttached) return;
+  videoPlayer.huddleListenersAttached = true;
 
   videoPlayer.addEventListener("play", () => {
     emitVideoSync("play");
@@ -63,7 +80,31 @@ function startVideoSync() {
 
   // Heartbeat for drift correction (host only)
   if (isHost) {
+    lastSyncedVideoUrl = getVideoMetadata().videoUrl;
     heartbeatTimer = setInterval(() => {
+      // Do not sync if Host is currently watching an ad
+      if (isAdPlaying()) return;
+
+      // 1. Detect if Host navigated to a new video/URL
+      const meta = getVideoMetadata();
+      if (meta.videoUrl !== lastSyncedVideoUrl) {
+        lastSyncedVideoUrl = meta.videoUrl;
+        console.log("[Huddle] Host changed video. Sending room metadata update:", meta.videoUrl);
+
+        socket.emit("updateRoomMeta", {
+          roomCode: currentRoomCode,
+          videoUrl: meta.videoUrl,
+          videoTitle: meta.videoTitle,
+          videoThumbnail: meta.videoThumbnail,
+          source: meta.source,
+          videoDuration: meta.videoDuration
+        });
+
+        // Re-detect new player reference for the new video page
+        detectVideoPlayer();
+        return; // Skip heartbeat sync for this tick
+      }
+
       emitVideoSync("heartbeat");
     }, HUDDLE_CONFIG.heartbeatInterval);
   }
